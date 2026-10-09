@@ -1,0 +1,100 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.card {
+  background: $color-bg-white;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  // Phiên bản Desktop
+  &.desktop {
+    padding: 16px;
+
+    &:hover {
+      transform: translateY(-4px);
+      box-shadow: $shadow-md;
+    }
+
+    .imageBox {
+      height: 140px;
+      font-size: 64px;
+      margin-bottom: 12px;
+    }
+
+    .title {
+      font-size: 15px;
+      min-height: 42px;
+      margin-bottom: 8px;
+    }
+
+    .price {
+      font-size: 18px;
+      margin-bottom: 14px;
+    }
+
+    .addBtn {
+      padding: 10px;
+      font-size: 14px;
+    }
+  }
+
+  // Phiên bản Mobile
+  &.mobile {
+    padding: 10px;
+
+    .imageBox {
+      height: 100px;
+      font-size: 44px;
+      margin-bottom: 8px;
+    }
+
+    .title {
+      font-size: 13px;
+      min-height: 36px;
+      margin-bottom: 6px;
+    }
+
+    .price {
+      font-size: 15px;
+      margin-bottom: 10px;
+    }
+
+    .addBtn {
+      padding: 8px;
+      font-size: 12px;
+      border-radius: $radius-sm;
+    }
+  }
+}
+
+.imageBox {
+  background: $color-bg;
+  border-radius: $radius-sm;
+  @include flex-center;
+}
+
+.title {
+  font-weight: 600;
+  color: $color-text;
+  @include text-ellipsis(2);
+}
+
+.price {
+  font-weight: 800;
+  color: $bhx-red;
+}
+
+.addBtn {
+  @include button-base;
+  width: 100%;
+  background-color: $bhx-green;
+  color: #fff;
+
+  &:hover:not(:disabled) {
+    background-color: $bhx-green-dark;
+  }
+}

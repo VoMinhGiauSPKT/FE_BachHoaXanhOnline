@@ -1,4 +1,5 @@
 import React from 'react';
+import ProductCard from '../../../../components/ProductCard';
 import styles from './DesktopHome.module.scss';
 
 export const DesktopHome = ({
@@ -29,25 +30,17 @@ export const DesktopHome = ({
         </div>
       </section>
 
-      {/* Danh sách sản phẩm */}
+      {/* Danh sách sản phẩm tái sử dụng ProductCard */}
       <section>
         <h2 className={styles.sectionTitle}>🥩 SẢN PHẨM NỔI BẬT HÔM NAY</h2>
         <div className={styles.productGrid}>
-          {products.map((p) => (
-            <div key={p.id} className={styles.productCard}>
-              <div className={styles.imageBox}>
-                <span>{p.icon}</span>
-              </div>
-              <h3 className={styles.title}>{p.name}</h3>
-              <div className={styles.price}>{p.price.toLocaleString('vi-VN')} đ</div>
-              <button
-                type="button"
-                className={styles.addBtn}
-                onClick={() => onAddToCart(p)}
-              >
-                + Thêm vào giỏ
-              </button>
-            </div>
+          {products.map((product) => (
+            <ProductCard
+              key={product.id}
+              product={product}
+              variant="desktop"
+              onAddToCart={onAddToCart}
+            />
           ))}
         </div>
       </section>

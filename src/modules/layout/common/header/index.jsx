@@ -1,18 +1,16 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../../stores/useAuthStore';
+import useRequireAuth from '../../../../hooks/useRequireAuth';
 import styles from './Header.module.scss';
 
 export const Header = () => {
   const navigate = useNavigate();
   const { user, isAuthenticated, logout } = useAuthStore();
+  const { requireAuth } = useRequireAuth();
 
   const handleCartClick = () => {
-    if (!isAuthenticated) {
-      navigate('/login?redirect=/cart');
-    } else {
-      navigate('/cart');
-    }
+    requireAuth(() => navigate('/cart'), 'Vui lòng đăng nhập để xem giỏ hàng!');
   };
 
   return (

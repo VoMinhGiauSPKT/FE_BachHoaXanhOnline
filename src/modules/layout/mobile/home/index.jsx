@@ -1,4 +1,5 @@
 import React from 'react';
+import ProductCard from '../../../../components/ProductCard';
 import styles from './MobileHome.module.scss';
 
 export const MobileHome = ({
@@ -22,24 +23,16 @@ export const MobileHome = ({
         Touch: {deviceInfo?.details?.touchPointerMatch ? 'Có' : 'Không'}
       </div>
 
-      {/* Danh sách sản phẩm 2 cột */}
+      {/* Danh sách sản phẩm tái sử dụng ProductCard dạng Mobile */}
       <div className={styles.sectionHeader}>🔥 Ưu Đãi Hôm Nay</div>
       <div className={styles.mobileGrid}>
-        {products.map((p) => (
-          <div key={p.id} className={styles.mobileCard}>
-            <div className={styles.imgHolder}>
-              <span>{p.icon}</span>
-            </div>
-            <div className={styles.name}>{p.name}</div>
-            <div className={styles.price}>{p.price.toLocaleString('vi-VN')} đ</div>
-            <button
-              type="button"
-              className={styles.buyBtn}
-              onClick={() => onAddToCart(p)}
-            >
-              + Chọn mua
-            </button>
-          </div>
+        {products.map((product) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            variant="mobile"
+            onAddToCart={onAddToCart}
+          />
         ))}
       </div>
     </div>

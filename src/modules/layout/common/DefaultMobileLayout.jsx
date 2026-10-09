@@ -1,19 +1,17 @@
 import React from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import useAuthStore from '../../../stores/useAuthStore';
+import useRequireAuth from '../../../hooks/useRequireAuth';
 import styles from './DefaultMobileLayout.module.scss';
 
 export const DefaultMobileLayout = ({ children }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAuthenticated } = useAuthStore();
+  const { requireAuth } = useRequireAuth();
 
-  const handleAuthAction = (targetUrl) => {
-    if (!isAuthenticated) {
-      navigate(`/login?redirect=${encodeURIComponent(targetUrl)}`);
-    } else {
-      navigate(targetUrl);
-    }
+  const handleAuthAction = (targetUrl, message) => {
+    requireAuth(() => navigate(targetUrl), message);
   };
 
   return (
@@ -57,7 +55,7 @@ export const DefaultMobileLayout = ({ children }) => {
         <button
           type="button"
           className={styles.navItem}
-          onClick={() => handleAuthAction('/cart')}
+          onClick={() => handleAuthAction('/cart', 'Vui lòng đăng nhập để xem giỏ hàng!')}
         >
           <span className={styles.icon}>🛒</span>
           <span>Giỏ hàng</span>
@@ -66,7 +64,7 @@ export const DefaultMobileLayout = ({ children }) => {
         <button
           type="button"
           className={styles.navItem}
-          onClick={() => handleAuthAction('/orders')}
+          onClick={() => handleAuthAction('/orders', 'Vui lòng đăng nhập để xem đơn hàng!')}
         >
           <span className={styles.icon}>📦</span>
           <span>Đơn hàng</span>
@@ -75,7 +73,7 @@ export const DefaultMobileLayout = ({ children }) => {
         <button
           type="button"
           className={`${styles.navItem} ${location.pathname === '/login' ? styles.active : ''}`}
-          onClick={() => navigate(isAuthenticated ? '/profile' : '/login')}
+          onClick={() => navigate(isAuthenticated ? '/' : '/login')}
         >
           <span className={styles.icon}>👤</span>
           <span>{isAuthenticated ? 'Tài khoản' : 'Đăng nhập'}</span>

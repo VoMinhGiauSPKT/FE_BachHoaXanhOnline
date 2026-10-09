@@ -1,6 +1,7 @@
 import axios from 'axios';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://bach-hoa-xanh-online.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
@@ -15,7 +16,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   (config) => {
     // Đọc token từ localStorage (được đồng bộ bởi Zustand Auth Store)
-    const authStorage = localStorage.getItem('bhx-auth-storage');
+    const authStorage = localStorage.getItem(STORAGE_KEYS.AUTH);
     if (authStorage) {
       try {
         const parsed = JSON.parse(authStorage);

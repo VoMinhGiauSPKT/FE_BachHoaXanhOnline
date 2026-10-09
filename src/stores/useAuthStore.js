@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import authService from '../services/authService';
+import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export const useAuthStore = create(
   persist(
@@ -74,12 +75,12 @@ export const useAuthStore = create(
             isAuthenticated: false,
             error: null
           });
-          localStorage.removeItem('bhx-auth-storage');
+          localStorage.removeItem(STORAGE_KEYS.AUTH);
         }
       }
     }),
     {
-      name: 'bhx-auth-storage', // Lưu vào localStorage
+      name: STORAGE_KEYS.AUTH, // Lưu vào localStorage
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
