@@ -1,0 +1,142 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.adminWrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: #f0f2f5;
+  color: $color-text;
+}
+
+.adminHeader {
+  height: 60px;
+  background-color: #004d26; // Xanh đậm chuyên nghiệp cho phân hệ quản trị
+  color: #fff;
+  @include flex-between;
+  padding: 0 24px;
+  box-shadow: $shadow-sm;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+
+  .brandLogo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: 0.5px;
+    color: #fff;
+
+    .tag {
+      background: $bhx-yellow;
+      color: $bhx-green-dark;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: $radius-sm;
+      font-weight: 700;
+    }
+  }
+
+  .userInfo {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 14px;
+
+    .roleBadge {
+      background: rgba(255, 255, 255, 0.2);
+      padding: 3px 10px;
+      border-radius: $radius-full;
+      font-size: 12px;
+      font-weight: 700;
+      color: $bhx-yellow;
+    }
+
+    .shopLink {
+      color: #fff;
+      font-size: 13px;
+      opacity: 0.9;
+      text-decoration: underline;
+
+      &:hover {
+        opacity: 1;
+      }
+    }
+
+    .logoutBtn {
+      background: rgba(208, 2, 27, 0.85);
+      color: #fff;
+      border: none;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      border-radius: $radius-sm;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+
+      &:hover {
+        background: $bhx-red;
+      }
+    }
+  }
+}
+
+.bodyLayout {
+  display: flex;
+  flex: 1;
+}
+
+.sidebar {
+  width: 250px;
+  background-color: #fff;
+  border-right: 1px solid $color-border;
+  padding: 20px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  .menuSection {
+    padding: 0 16px 8px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: $color-text-muted;
+    letter-spacing: 0.5px;
+  }
+
+  .navItem {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    color: $color-text-secondary;
+    font-size: 14px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    border-left: 4px solid transparent;
+    cursor: pointer;
+
+    &:hover {
+      background-color: $bhx-green-light;
+      color: $bhx-green-dark;
+    }
+
+    &.active {
+      background-color: $bhx-green-light;
+      color: $bhx-green;
+      border-left-color: $bhx-green;
+    }
+
+    .icon {
+      font-size: 18px;
+    }
+  }
+}
+
+.mainContent {
+  flex: 1;
+  padding: 24px 30px;
+  overflow-y: auto;
+}

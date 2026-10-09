@@ -122,6 +122,25 @@
       color: $bhx-yellow;
     }
 
+    .adminBadgeBtn {
+      background-color: #ffffff;
+      color: $bhx-green-dark;
+      padding: 4px 10px;
+      font-size: 12px;
+      font-weight: 700;
+      border-radius: $radius-full;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s ease;
+
+      &:hover {
+        background-color: $bhx-yellow;
+        color: $bhx-green-dark;
+        transform: translateY(-1px);
+      }
+    }
+
     .logoutBtn {
       background: rgba(255, 255, 255, 0.2);
       color: #fff;

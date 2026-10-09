@@ -1,0 +1,189 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.dashboardContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+// 4 thẻ chỉ số nhanh
+.metricsGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+
+  .metricCard {
+    background-color: #fff;
+    border-radius: $radius-md;
+    padding: 18px 20px;
+    border: 1px solid $color-border;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: $shadow-sm;
+
+    .info {
+      .value {
+        font-size: 24px;
+        font-weight: 800;
+        margin-bottom: 4px;
+      }
+      .label {
+        font-size: 13px;
+        color: $color-text-secondary;
+      }
+    }
+
+    .iconCircle {
+      width: 44px;
+      height: 44px;
+      border-radius: $radius-full;
+      @include flex-center;
+      font-size: 20px;
+      background: $color-bg;
+    }
+  }
+}
+
+// Bảng dữ liệu quản trị
+.tableCard {
+  background-color: #fff;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  box-shadow: $shadow-sm;
+  overflow: hidden;
+
+  .cardHeader {
+    padding: 18px 24px;
+    border-bottom: 1px solid $color-border-light;
+    @include flex-between;
+    gap: 16px;
+
+    .titleArea {
+      h2 {
+        font-size: 18px;
+        font-weight: 700;
+        color: $bhx-green-dark;
+      }
+      p {
+        font-size: 12px;
+        color: $color-text-muted;
+        margin-top: 2px;
+      }
+    }
+
+    .actionArea {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+
+      .searchBar {
+        @include input-base;
+        padding: 8px 12px;
+        font-size: 13px;
+        width: 240px;
+      }
+
+      .addBtn {
+        @include button-base;
+        padding: 9px 16px;
+        background-color: $bhx-green;
+        color: #fff;
+        font-size: 13px;
+
+        &:hover {
+          background-color: $bhx-green-dark;
+        }
+      }
+    }
+  }
+
+  .tableWrapper {
+    width: 100%;
+    overflow-x: auto;
+  }
+
+  .dataTable {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 13px;
+
+    th {
+      background-color: #fafafa;
+      color: $color-text-secondary;
+      font-weight: 600;
+      padding: 12px 18px;
+      border-bottom: 1px solid $color-border;
+    }
+
+    td {
+      padding: 14px 18px;
+      border-bottom: 1px solid $color-border-light;
+      color: $color-text;
+    }
+
+    tr:hover td {
+      background-color: #fcfcfc;
+    }
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: $radius-sm;
+    font-size: 11px;
+    font-weight: 700;
+
+    &.active {
+      background-color: $bhx-green-light;
+      color: $bhx-green-dark;
+    }
+
+    &.lowStock {
+      background-color: #fff8e6;
+      color: #b26b00;
+    }
+
+    &.outOfStock {
+      background-color: $bhx-red-light;
+      color: $bhx-red;
+    }
+  }
+
+  .actionBtns {
+    display: flex;
+    gap: 8px;
+
+    .editBtn {
+      background: none;
+      border: 1px solid #1677ff;
+      color: #1677ff;
+      padding: 4px 8px;
+      border-radius: $radius-sm;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background-color: #e6f4ff;
+      }
+    }
+
+    .deleteBtn {
+      background: none;
+      border: 1px solid $bhx-red;
+      color: $bhx-red;
+      padding: 4px 8px;
+      border-radius: $radius-sm;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+
+      &:hover {
+        background-color: $bhx-red-light;
+      }
+    }
+  }
+}

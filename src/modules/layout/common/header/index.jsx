@@ -2,22 +2,23 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../../stores/useAuthStore';
 import useRequireAuth from '../../../../hooks/useRequireAuth';
+import { PATHS } from '../../../../routes/paths';
 import styles from './Header.module.scss';
 
 export const Header = () => {
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuthStore();
+  const { user, userType, isAuthenticated, logout } = useAuthStore();
   const { requireAuth } = useRequireAuth();
 
   const handleCartClick = () => {
-    requireAuth(() => navigate('/cart'), 'Vui lòng đăng nhập để xem giỏ hàng!');
+    requireAuth(() => navigate(PATHS.CART), 'Vui lòng đăng nhập để xem giỏ hàng!');
   };
 
   return (
     <header className={styles.header}>
       <div className={styles.topBar}>
         {/* Logo */}
-        <Link to="/" className={styles.logoArea}>
+        <Link to={PATHS.HOME} className={styles.logoArea}>
           <div className={styles.logo}>
             <span className={styles.brandName}>BÁCH HÓA XANH</span>
             <span className={styles.brandSub}>Thực phẩm tươi sống & Nhu yếu phẩm</span>
@@ -37,16 +38,23 @@ export const Header = () => {
 
         {/* Khu vực tài khoản & Giỏ hàng */}
         <div className={styles.userActions}>
-          <button
-            type="button"
-            className={styles.actionBtn}
-            onClick={handleCartClick}
-          >
-            🛒 <span>Giỏ hàng</span>
-          </button>
+          {userType !== 'EMPLOYEE' && (
+            <button
+              type="button"
+              className={styles.actionBtn}
+              onClick={handleCartClick}
+            >
+              🛒 <span>Giỏ hàng</span>
+            </button>
+          )}
 
           {isAuthenticated ? (
             <div className={styles.userProfile}>
+              {userType === 'EMPLOYEE' ? (
+                <Link to={PATHS.ADMIN.DASHBOARD} className={styles.adminBadgeBtn}>
+                  ⚙️ Trang Quản Trị ({user?.position || 'STAFF'})
+                </Link>
+              ) : null}
               <span>Xin chào, </span>
               <span className={styles.userName}>
                 {user?.fullName || user?.username || 'Khách hàng'}
@@ -60,7 +68,7 @@ export const Header = () => {
               </button>
             </div>
           ) : (
-            <Link to="/login" className={`${styles.actionBtn} ${styles.loginBtn}`}>
+            <Link to={PATHS.LOGIN} className={`${styles.actionBtn} ${styles.loginBtn}`}>
               👤 Đăng nhập
             </Link>
           )}

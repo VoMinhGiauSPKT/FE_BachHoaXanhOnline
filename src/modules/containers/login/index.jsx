@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { PATHS } from '../../../routes/paths';
 import useDeviceDetect from '../../../hooks/useDeviceDetect';
 import useAuthStore from '../../../stores/useAuthStore';
 import DefaultLayout from '../../layout/common/DefaultLayout';
@@ -66,9 +67,17 @@ export const LoginContainer = () => {
       });
 
       if (result.success) {
+        const userType = result.data?.userType;
         const displayName = result.data?.customer?.fullName || result.data?.employee?.fullName || formData.username;
-        alert(`🎉 Đăng nhập thành công! Xin chào ${displayName}`);
-        navigate(redirectPath, { replace: true });
+
+        if (userType === 'EMPLOYEE') {
+          const role = result.data?.employee?.position || 'Nhân viên';
+          alert(`🎉 Đăng nhập thành công! Chào mừng ${role}: ${displayName}`);
+          navigate(PATHS.ADMIN.DASHBOARD, { replace: true });
+        } else {
+          alert(`🎉 Đăng nhập thành công! Xin chào ${displayName}`);
+          navigate(redirectPath || PATHS.HOME, { replace: true });
+        }
       }
     }
   };
