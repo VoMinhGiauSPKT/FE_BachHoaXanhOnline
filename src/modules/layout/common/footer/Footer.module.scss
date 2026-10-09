@@ -1,0 +1,43 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.footer {
+  background-color: $color-bg-white;
+  border-top: 1px solid $color-border;
+  padding: 30px 16px 20px;
+  margin-top: auto;
+  color: $color-text-secondary;
+  font-size: 13px;
+
+  .container {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+  }
+
+  .col {
+    h4 {
+      color: $bhx-green-dark;
+      font-size: 15px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    p {
+      margin-bottom: 8px;
+      line-height: 1.6;
+    }
+  }
+
+  .bottom {
+    max-width: 1200px;
+    margin: 20px auto 0;
+    padding-top: 15px;
+    border-top: 1px solid $color-border-light;
+    text-align: center;
+    color: $color-text-muted;
+    font-size: 12px;
+  }
+}

@@ -1,0 +1,104 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.mobileLoginWrapper {
+  background-color: $color-bg-white;
+  border-radius: $radius-lg;
+  padding: 20px 16px;
+  box-shadow: $shadow-sm;
+  border: 1px solid $color-border;
+}
+
+.brandHeader {
+  text-align: center;
+  margin-bottom: 20px;
+
+  h3 {
+    color: $bhx-green;
+    font-size: 20px;
+    font-weight: 800;
+  }
+
+  p {
+    font-size: 13px;
+    color: $color-text-secondary;
+    margin-top: 4px;
+  }
+}
+
+.tabs {
+  display: flex;
+  background-color: $color-bg;
+  border-radius: $radius-md;
+  padding: 4px;
+  margin-bottom: 20px;
+
+  .tabItem {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 600;
+    color: $color-text-secondary;
+    border-radius: $radius-sm;
+    cursor: pointer;
+    transition: all 0.2s ease;
+
+    &.active {
+      background-color: #fff;
+      color: $bhx-green-dark;
+      box-shadow: $shadow-sm;
+    }
+  }
+}
+
+.alertError {
+  background-color: $bhx-red-light;
+  color: $bhx-red;
+  border-radius: $radius-md;
+  padding: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.alertSuccess {
+  background-color: $bhx-green-light;
+  color: $bhx-green-dark;
+  border-radius: $radius-md;
+  padding: 10px;
+  font-size: 13px;
+  margin-bottom: 16px;
+}
+
+.formGroup {
+  margin-bottom: 14px;
+
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    margin-bottom: 4px;
+    color: $color-text;
+  }
+
+  input {
+    @include input-base;
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+
+.submitBtn {
+  @include button-base;
+  width: 100%;
+  padding: 13px;
+  background-color: $bhx-green;
+  color: #fff;
+  font-size: 15px;
+  margin-top: 8px;
+
+  &:hover:not(:disabled) {
+    background-color: $bhx-green-dark;
+  }
+}

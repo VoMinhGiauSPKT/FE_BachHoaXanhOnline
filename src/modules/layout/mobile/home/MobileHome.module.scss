@@ -1,0 +1,98 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.mobileHome {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.promoBanner {
+  background: linear-gradient(135deg, $bhx-green-dark 0%, $bhx-green 100%);
+  border-radius: $radius-md;
+  padding: 16px;
+  color: #fff;
+  text-align: center;
+
+  h2 {
+    font-size: 17px;
+    color: $bhx-yellow;
+    margin-bottom: 4px;
+  }
+
+  p {
+    font-size: 12px;
+    opacity: 0.9;
+  }
+}
+
+.deviceInfoBadge {
+  background: #fff;
+  border-radius: $radius-sm;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: $color-text-secondary;
+  border: 1px solid $color-border;
+  line-height: 1.4;
+
+  strong {
+    color: $bhx-green;
+  }
+}
+
+.sectionHeader {
+  font-size: 16px;
+  font-weight: 700;
+  color: $bhx-green-dark;
+}
+
+.mobileGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.mobileCard {
+  background: #fff;
+  border-radius: $radius-md;
+  border: 1px solid $color-border;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  .imgHolder {
+    height: 100px;
+    background: $color-bg;
+    border-radius: $radius-sm;
+    @include flex-center;
+    font-size: 44px;
+    margin-bottom: 8px;
+  }
+
+  .name {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-text;
+    @include text-ellipsis(2);
+    min-height: 36px;
+    margin-bottom: 6px;
+  }
+
+  .price {
+    font-size: 15px;
+    font-weight: 800;
+    color: $bhx-red;
+    margin-bottom: 10px;
+  }
+
+  .buyBtn {
+    @include button-base;
+    width: 100%;
+    padding: 8px;
+    background-color: $bhx-green;
+    color: #fff;
+    font-size: 12px;
+    border-radius: $radius-sm;
+  }
+}

@@ -1,0 +1,71 @@
+@use './variables' as *;
+
+// Căn giữa nhanh
+@mixin flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@mixin flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+// Cắt ngắn văn bản với dấu ...
+@mixin text-ellipsis($lines: 1) {
+  @if $lines == 1 {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  } @else {
+    display: -webkit-box;
+    -webkit-line-clamp: $lines;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+// Button dùng chung
+@mixin button-base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: inherit;
+  font-weight: 600;
+  border-radius: $radius-md;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  text-decoration: none;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+}
+
+// Input dùng chung
+@mixin input-base {
+  width: 100%;
+  padding: 12px 14px;
+  font-size: 15px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-color: $color-bg-white;
+  color: $color-text;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: $bhx-green;
+    box-shadow: 0 0 0 3px rgba(0, 136, 72, 0.15);
+  }
+
+  &::placeholder {
+    color: $color-text-muted;
+  }
+}

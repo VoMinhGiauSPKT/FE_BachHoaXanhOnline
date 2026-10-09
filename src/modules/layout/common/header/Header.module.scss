@@ -1,0 +1,139 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.header {
+  background-color: $bhx-green;
+  color: $color-bg-white;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: $shadow-md;
+}
+
+.topBar {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 10px 16px;
+  @include flex-between;
+  gap: 20px;
+}
+
+.logoArea {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  .logo {
+    display: flex;
+    flex-direction: column;
+    color: $color-bg-white;
+
+    .brandName {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      color: $bhx-yellow;
+      line-height: 1.1;
+    }
+
+    .brandSub {
+      font-size: 11px;
+      color: $color-bg-white;
+      opacity: 0.9;
+    }
+  }
+}
+
+.searchBox {
+  flex: 1;
+  max-width: 550px;
+  position: relative;
+
+  input {
+    @include input-base;
+    padding: 10px 40px 10px 14px;
+    border-radius: $radius-full;
+    border: none;
+    font-size: 14px;
+
+    &:focus {
+      box-shadow: 0 0 0 3px rgba(254, 209, 0, 0.4);
+    }
+  }
+
+  .searchBtn {
+    position: absolute;
+    right: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: $bhx-yellow;
+    color: $bhx-green-dark;
+    border: none;
+    border-radius: $radius-full;
+    width: 32px;
+    height: 32px;
+    @include flex-center;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+  }
+}
+
+.userActions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  .actionBtn {
+    @include flex-center;
+    gap: 8px;
+    color: $color-bg-white;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: $radius-md;
+    transition: background-color 0.2s ease;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+
+    &:hover {
+      background-color: rgba(255, 255, 255, 0.15);
+    }
+
+    &.loginBtn {
+      background-color: $bhx-yellow;
+      color: $bhx-green-dark;
+      font-weight: 700;
+
+      &:hover {
+        background-color: $bhx-yellow-dark;
+      }
+    }
+  }
+
+  .userProfile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .userName {
+      font-weight: 600;
+      color: $bhx-yellow;
+    }
+
+    .logoutBtn {
+      background: rgba(255, 255, 255, 0.2);
+      color: #fff;
+      border: none;
+      padding: 4px 10px;
+      font-size: 12px;
+      border-radius: $radius-sm;
+      cursor: pointer;
+
+      &:hover {
+        background: rgba(208, 2, 27, 0.8);
+      }
+    }
+  }
+}

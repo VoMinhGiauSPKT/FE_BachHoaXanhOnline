@@ -1,0 +1,102 @@
+@use '../../../styles/variables' as *;
+@use '../../../styles/mixins' as *;
+
+.mobileLayout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: $color-bg;
+  padding-bottom: 65px; // Chừa khoảng trống cho bottom navigation
+}
+
+.mobileHeader {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background-color: $bhx-green;
+  color: #fff;
+  padding: 10px 14px;
+  box-shadow: $shadow-sm;
+
+  .topRow {
+    @include flex-between;
+    margin-bottom: 8px;
+
+    .brand {
+      font-weight: 800;
+      font-size: 17px;
+      color: $bhx-yellow;
+      letter-spacing: 0.5px;
+    }
+
+    .userShortcut {
+      font-size: 13px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  }
+
+  .searchBar {
+    position: relative;
+
+    input {
+      @include input-base;
+      padding: 8px 36px 8px 12px;
+      font-size: 13px;
+      border-radius: $radius-full;
+      border: none;
+    }
+
+    .icon {
+      position: absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 13px;
+    }
+  }
+}
+
+.mobileContent {
+  flex: 1;
+  padding: 12px;
+}
+
+.bottomNav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 56px;
+  background-color: #fff;
+  border-top: 1px solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  z-index: 100;
+
+  .navItem {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: $color-text-secondary;
+    font-size: 11px;
+    font-weight: 500;
+    gap: 2px;
+    cursor: pointer;
+    background: transparent;
+    border: none;
+
+    &.active {
+      color: $bhx-green;
+      font-weight: 700;
+    }
+
+    .icon {
+      font-size: 18px;
+    }
+  }
+}
