@@ -1,4 +1,5 @@
 import apiClient from './apiClient';
+import { API_ENDPOINTS } from '../constants/apiEndpoints';
 
 export const authService = {
   /**
@@ -6,7 +7,7 @@ export const authService = {
    * @param {{ username: string, password: string }} credentials
    */
   login: async (credentials) => {
-    return await apiClient.post('/auth/login', credentials);
+    return await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
   },
 
   /**
@@ -14,28 +15,28 @@ export const authService = {
    * @param {{ username: string, fullName: string, email: string, phoneNumber: string, password: string, birthDate?: string }} data
    */
   register: async (data) => {
-    return await apiClient.post('/auth/register', data);
+    return await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, data);
   },
 
   /**
    * Cấp lại Access Token mới qua cookie refreshToken
    */
   refreshToken: async () => {
-    return await apiClient.post('/auth/refresh');
+    return await apiClient.post(API_ENDPOINTS.AUTH.REFRESH);
   },
 
   /**
    * Đăng xuất hệ thống (xóa cookie refreshToken trên server)
    */
   logout: async () => {
-    return await apiClient.post('/auth/logout');
+    return await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
   },
 
   /**
    * Lấy thông tin cá nhân của tài khoản đang đăng nhập
    */
   getProfile: async () => {
-    return await apiClient.get('/user/profile');
+    return await apiClient.get(API_ENDPOINTS.USER.PROFILE);
   }
 };
 
