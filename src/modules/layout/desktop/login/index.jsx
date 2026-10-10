@@ -5,6 +5,7 @@ export const DesktopLogin = ({
   isRegister,
   setIsRegister,
   formData,
+  validationErrors = {},
   handleChange,
   handleSubmit,
   isLoading,
@@ -14,21 +15,25 @@ export const DesktopLogin = ({
   return (
     <div className={styles.loginWrapper}>
       <div className={styles.loginCard}>
-        {/* Cột trái: Banner thương hiệu Bách Hóa Xanh */}
+        {/* Cột trái: Banner thương hiệu FreshMart */}
         <div className={styles.bannerSide}>
           <div className={styles.brandHeader}>
-            <h2>BÁCH HÓA XANH</h2>
+            <h2>FRESHMART ONLINE</h2>
             <p>Mua sắm tươi ngon mỗi ngày, giao nhanh tận cửa với hàng ngàn ưu đãi hấp dẫn.</p>
           </div>
 
           <div className={styles.featuresList}>
             <div className={styles.featureItem}>
               <span className={styles.icon}>🥬</span>
-              <span>Rau củ, thịt cá tươi sống nhập mới mỗi ngày</span>
+              <span>Rau củ VietGAP, thịt cá tươi sống nhập mới mỗi ngày</span>
             </div>
             <div className={styles.featureItem}>
               <span className={styles.icon}>⚡</span>
-              <span>Giao hàng hỏa tốc đúng giờ tận cửa nhà</span>
+              <span>Giao hàng hỏa tốc 30 phút đúng giờ tận cửa nhà</span>
+            </div>
+            <div className={styles.featureItem}>
+              <span className={styles.icon}>💳</span>
+              <span>Thanh toán Dynamic VietQR tiện lợi không dùng tiền mặt</span>
             </div>
             <div className={styles.featureItem}>
               <span className={styles.icon}>🎁</span>
@@ -37,7 +42,7 @@ export const DesktopLogin = ({
           </div>
 
           <div className={styles.footerNote}>
-            Hệ thống siêu thị Bách Hóa Xanh Online - Đồ án Lập trình Web
+            Hệ thống siêu thị FreshMart - Bách Hóa Xanh Online
           </div>
         </div>
 
@@ -63,7 +68,7 @@ export const DesktopLogin = ({
           {error && <div className={styles.alertError}>⚠️ {error}</div>}
           {successMessage && <div className={styles.alertSuccess}>🎉 {successMessage}</div>}
 
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit} noValidate>
             {/* Form Đăng ký có thêm các trường */}
             {isRegister && (
               <>
@@ -78,6 +83,9 @@ export const DesktopLogin = ({
                     value={formData.fullName}
                     onChange={handleChange}
                   />
+                  {validationErrors.fullName && (
+                    <span className={styles.inlineError}>{validationErrors.fullName}</span>
+                  )}
                 </div>
 
                 <div className={styles.formRow}>
@@ -92,6 +100,9 @@ export const DesktopLogin = ({
                       value={formData.phoneNumber}
                       onChange={handleChange}
                     />
+                    {validationErrors.phoneNumber && (
+                      <span className={styles.inlineError}>{validationErrors.phoneNumber}</span>
+                    )}
                   </div>
 
                   <div className={styles.formGroup}>
@@ -105,6 +116,9 @@ export const DesktopLogin = ({
                       value={formData.email}
                       onChange={handleChange}
                     />
+                    {validationErrors.email && (
+                      <span className={styles.inlineError}>{validationErrors.email}</span>
+                    )}
                   </div>
                 </div>
 
@@ -133,6 +147,9 @@ export const DesktopLogin = ({
                 value={formData.username}
                 onChange={handleChange}
               />
+              {validationErrors.username && (
+                <span className={styles.inlineError}>{validationErrors.username}</span>
+              )}
             </div>
 
             <div className={styles.formGroup}>
@@ -146,6 +163,9 @@ export const DesktopLogin = ({
                 value={formData.password}
                 onChange={handleChange}
               />
+              {validationErrors.password && (
+                <span className={styles.inlineError}>{validationErrors.password}</span>
+              )}
             </div>
 
             <button

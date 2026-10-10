@@ -1,5 +1,7 @@
 /**
  * Mock data nội bộ cho phân hệ Quản trị (Admin / Employee)
+ * Đồng bộ với PostgreSQL enum_donvitinh:
+ * 'LON', 'CHAI', 'LOC4', 'LOC6', 'THUNG24', 'THUNG30', 'THUNG48', 'GOI', 'CAI', 'BAO', 'KG'
  */
 
 export const INITIAL_ADMIN_PRODUCTS = [
@@ -8,7 +10,7 @@ export const INITIAL_ADMIN_PRODUCTS = [
     productName: 'Sữa tươi tiệt trùng Vinamilk Có đường 1L',
     categoryName: 'Đồ uống & Sữa',
     price: 37500,
-    unit: 'Hộp',
+    unit: 'LON',
     stock: 120,
     status: 'ACTIVE'
   },
@@ -17,7 +19,7 @@ export const INITIAL_ADMIN_PRODUCTS = [
     productName: 'Gạo ST25 Ông Cua Túi 5kg',
     categoryName: 'Lương thực & Gạo',
     price: 210000,
-    unit: 'Túi',
+    unit: 'BAO',
     stock: 45,
     status: 'ACTIVE'
   },
@@ -26,7 +28,7 @@ export const INITIAL_ADMIN_PRODUCTS = [
     productName: 'Thịt ba rọi heo tươi CP (Khay 500g)',
     categoryName: 'Thịt, Cá, Hải sản',
     price: 85000,
-    unit: 'Khay',
+    unit: 'KG',
     stock: 18,
     status: 'ACTIVE'
   },
@@ -35,7 +37,7 @@ export const INITIAL_ADMIN_PRODUCTS = [
     productName: 'Trứng gà tươi Ba Huân Hộp 10 quả',
     categoryName: 'Trứng & Bơ sữa',
     price: 32000,
-    unit: 'Hộp',
+    unit: 'CAI',
     stock: 5,
     status: 'LOW_STOCK'
   },
@@ -44,7 +46,7 @@ export const INITIAL_ADMIN_PRODUCTS = [
     productName: 'Cà chua VietGAP Đạt chuẩn (Túi 1kg)',
     categoryName: 'Rau củ & Trái cây',
     price: 28000,
-    unit: 'Túi',
+    unit: 'KG',
     stock: 0,
     status: 'OUT_OF_STOCK'
   }

@@ -2,11 +2,11 @@ import React from 'react';
 import Header from './header';
 import Footer from './footer';
 
-export const DefaultLayout = ({ children }) => {
+export const DefaultLayout = ({ children, onSearchChange, searchValue }) => {
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f5f5f5' }}>
-      <Header />
-      <main style={{ flex: 1, width: '100%', maxWidth: '1200px', margin: '0 auto', padding: '20px 16px' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh', background: '#f8fafc' }}>
+      <Header onSearchChange={onSearchChange} searchValue={searchValue} />
+      <main style={{ flex: 1, width: '100%', maxWidth: '1400px', margin: '0 auto', padding: '24px 24px 48px' }}>
         {children}
       </main>
       <Footer />

@@ -3,32 +3,27 @@ import ProductCard from '../../../../components/ProductCard';
 import styles from './MobileHome.module.scss';
 
 export const MobileHome = ({
-  products,
+  products = [],
   onAddToCart,
-  deviceInfo
+  totalItems
 }) => {
   return (
     <div className={styles.mobileHome}>
       {/* Banner Khuyến Mãi Mobile */}
       <div className={styles.promoBanner}>
-        <h2>BÁCH HÓA XANH MOBILE</h2>
-        <p>Đi chợ tiện lợi - Giao siêu tốc trong 2H</p>
+        <h2>FRESHMART ONLINE</h2>
+        <p>Thực phẩm tươi sạch mỗi ngày - Giao siêu tốc 30 phút</p>
       </div>
 
-      {/* Thông tin nhận diện */}
-      <div className={styles.deviceInfoBadge}>
-        📱 Đang hiển thị: <strong>MOBILE LAYOUT</strong><br />
-        Nhận diện: UA: {deviceInfo?.details?.userAgentMatch ? 'Có' : 'Không'} | 
-        Hints: {deviceInfo?.details?.clientHintsOrRouting ? 'Có' : 'Không'} | 
-        Touch: {deviceInfo?.details?.touchPointerMatch ? 'Có' : 'Không'}
+      {/* Danh sách sản phẩm */}
+      <div className={styles.sectionHeader}>
+        🔥 Ưu Đãi Hôm Nay ({totalItems || products.length} món)
       </div>
 
-      {/* Danh sách sản phẩm tái sử dụng ProductCard dạng Mobile */}
-      <div className={styles.sectionHeader}>🔥 Ưu Đãi Hôm Nay</div>
       <div className={styles.mobileGrid}>
         {products.map((product) => (
           <ProductCard
-            key={product.id}
+            key={product.productId || product.id}
             product={product}
             variant="mobile"
             onAddToCart={onAddToCart}

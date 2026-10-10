@@ -1,0 +1,203 @@
+@use '../../styles/variables' as *;
+
+.filterCard {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: 22px 20px;
+  box-shadow: $shadow-xs;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  position: sticky;
+  top: 90px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 14px;
+  border-bottom: 1px solid $color-border;
+
+  .titleWrap {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .filterIcon {
+      font-size: 16px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: $color-text-main;
+      letter-spacing: -0.2px;
+    }
+  }
+
+  .resetBtn {
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-primary-dark;
+    transition: opacity 0.15s ease;
+
+    &:hover {
+      text-decoration: underline;
+      opacity: 0.8;
+    }
+  }
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  .sectionTitle {
+    font-size: 13.5px;
+    font-weight: 700;
+    color: $color-text-main;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+}
+
+.categoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.categoryItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  border-radius: $radius-md;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: $color-text-secondary;
+  text-align: left;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: $color-primary-light;
+    color: $color-primary-dark;
+  }
+
+  &.active {
+    background: #ecfdf5;
+    color: $color-primary-dark;
+    font-weight: 700;
+    border-left: 3px solid $color-primary;
+
+    .indicator {
+      color: $color-primary;
+      font-size: 10px;
+    }
+  }
+}
+
+.priceForm {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.priceInputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  input {
+    width: 100%;
+    padding: 8px 10px;
+    font-size: 13px;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    outline: none;
+    transition: border-color 0.15s ease;
+
+    &:focus {
+      border-color: $color-primary;
+    }
+  }
+
+  .separator {
+    color: $color-text-muted;
+    font-size: 12px;
+  }
+}
+
+.applyPriceBtn {
+  background: #111827;
+  color: #ffffff;
+  padding: 9px;
+  border-radius: $radius-full;
+  font-size: 12.5px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+
+  &:hover {
+    background: #374151;
+  }
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+
+  input[type='checkbox'] {
+    width: 17px;
+    height: 17px;
+    accent-color: $color-primary;
+    cursor: pointer;
+  }
+
+  .labelText {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $color-text-main;
+  }
+}
+
+.perkBadges {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px dashed $color-border;
+}
+
+.perkItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 8px 10px;
+  background: #f8fafc;
+  border-radius: $radius-md;
+
+  .perkIcon {
+    font-size: 16px;
+  }
+
+  .perkContent {
+    strong {
+      font-size: 12.5px;
+      color: $color-text-main;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    p {
+      font-size: 11.5px;
+      color: $color-text-secondary;
+      line-height: 1.3;
+    }
+  }
+}

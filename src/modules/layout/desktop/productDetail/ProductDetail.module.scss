@@ -1,0 +1,494 @@
+@use '../../../../styles/variables' as *;
+@use '../../../../styles/mixins' as *;
+
+.detailContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.breadcrumb {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13.5px;
+  color: $color-text-muted;
+
+  a {
+    color: $color-text-secondary;
+    transition: color 0.15s ease;
+
+    &:hover {
+      color: $color-primary;
+    }
+  }
+
+  .current {
+    color: $color-text-main;
+    font-weight: 600;
+  }
+}
+
+.showcaseGrid {
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  gap: 36px;
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  padding: 36px;
+  box-shadow: $shadow-sm;
+}
+
+@media (max-width: 900px) {
+  .showcaseGrid {
+    grid-template-columns: 1fr;
+    padding: 24px;
+  }
+}
+
+.imageColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.imageCard {
+  position: relative;
+  width: 100%;
+  height: 420px;
+  border-radius: $radius-lg;
+  background: #f8fafc;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid $color-border;
+
+  .mainImage {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .fallbackGraphic {
+    font-size: 96px;
+  }
+
+  .freshBadge {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    background: rgba(16, 185, 129, 0.95);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 6px 12px;
+    border-radius: $radius-full;
+    letter-spacing: 0.5px;
+    box-shadow: $shadow-xs;
+  }
+}
+
+.infoColumn {
+  display: flex;
+  flex-direction: column;
+}
+
+.categoryPill {
+  display: inline-block;
+  align-self: flex-start;
+  font-size: 12px;
+  font-weight: 700;
+  color: $color-primary-dark;
+  background: $color-primary-light;
+  padding: 4px 12px;
+  border-radius: $radius-full;
+  margin-bottom: 12px;
+}
+
+.productTitle {
+  font-size: 28px;
+  font-weight: 800;
+  color: $color-text-main;
+  line-height: 1.25;
+  margin-bottom: 14px;
+}
+
+.ratingBar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 20px;
+
+  .stars {
+    color: #f59e0b;
+    font-size: 16px;
+    letter-spacing: 1px;
+  }
+
+  .ratingScore {
+    font-size: 15px;
+    font-weight: 700;
+    color: $color-text-main;
+  }
+
+  .dot {
+    color: $color-text-muted;
+  }
+
+  .reviewCountLink {
+    font-size: 13.5px;
+    color: $color-primary-dark;
+    text-decoration: underline;
+
+    &:hover {
+      color: $color-primary;
+    }
+  }
+}
+
+.priceBox {
+  background: #f8fafc;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: 18px 24px;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  margin-bottom: 24px;
+
+  .currentPrice {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+
+    .amount {
+      font-size: 28px;
+      font-weight: 800;
+      color: $color-primary-dark;
+    }
+
+    .unitText {
+      font-size: 15px;
+      color: $color-text-secondary;
+      font-weight: 600;
+    }
+  }
+
+  .vatText {
+    font-size: 13px;
+    color: $color-text-muted;
+  }
+}
+
+.specsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 28px;
+
+  .specRow {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+
+    .specLabel {
+      width: 150px;
+      color: $color-text-secondary;
+      flex-shrink: 0;
+    }
+
+    .specValue {
+      color: $color-text-main;
+    }
+  }
+}
+
+.stockBadge {
+  font-size: 12px;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: $radius-full;
+
+  &.inStock {
+    background: #ecfdf5;
+    color: #047857;
+  }
+
+  &.outOfStock {
+    background: #fee2e2;
+    color: #b91c1c;
+  }
+}
+
+.actionSection {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-top: 16px;
+  border-top: 1px solid $color-border;
+}
+
+.quantityPicker {
+  display: flex;
+  align-items: center;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  background: #ffffff;
+
+  button {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 700;
+    color: $color-text-secondary;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: $color-bg-subtle;
+      color: $color-text-main;
+    }
+
+    &:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+  }
+
+  span {
+    min-width: 36px;
+    text-align: center;
+    font-size: 15px;
+    font-weight: 700;
+  }
+}
+
+.addToCartBtn {
+  flex: 1;
+  padding: 14px 28px;
+  background: $color-primary;
+  color: #ffffff;
+  font-size: 15.5px;
+  font-weight: 700;
+  border-radius: $radius-full;
+  box-shadow: $shadow-primary;
+  transition: all 0.2s ease;
+
+  &:hover:not(:disabled) {
+    background: $color-primary-hover;
+    transform: translateY(-2px);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: #9ca3af;
+  }
+}
+
+/* Reviews Section */
+.reviewsSection {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-xl;
+  padding: 36px;
+  box-shadow: $shadow-sm;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+
+  .reviewHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-bottom: 16px;
+    border-bottom: 1px solid $color-border;
+
+    h2 {
+      font-size: 20px;
+      font-weight: 800;
+      color: $color-text-main;
+    }
+
+    .ratingBadge {
+      font-size: 14px;
+      color: $color-text-secondary;
+
+      strong {
+        color: #f59e0b;
+        font-size: 16px;
+      }
+    }
+  }
+}
+
+.writeReviewCard {
+  background: #f8fafc;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: 20px;
+
+  h3 {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 12px;
+  }
+
+  .ratingSelector {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 12px;
+    font-size: 13.5px;
+
+    .starOptions {
+      display: flex;
+      gap: 12px;
+    }
+
+    .starRadio {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      color: #d97706;
+      font-weight: 600;
+    }
+  }
+
+  .commentInput {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    font-size: 14px;
+    outline: none;
+    background: #ffffff;
+    resize: vertical;
+    margin-bottom: 12px;
+
+    &:focus {
+      border-color: $color-primary;
+    }
+  }
+
+  .submitReviewBtn {
+    background: $color-primary;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
+    padding: 10px 24px;
+    border-radius: $radius-full;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: $color-primary-hover;
+    }
+  }
+}
+
+.reviewList {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .noReviews {
+    text-align: center;
+    color: $color-text-muted;
+    padding: 24px 0;
+  }
+}
+
+.reviewCard {
+  padding: 16px 20px;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  background: #ffffff;
+
+  .revHeader {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 10px;
+
+    .reviewerAvatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: #ecfdf5;
+      color: $color-primary-dark;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .reviewerMeta {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+
+      strong {
+        font-size: 14px;
+        color: $color-text-main;
+      }
+
+      .revDate {
+        font-size: 12px;
+        color: $color-text-muted;
+      }
+    }
+
+    .revRating {
+      color: #f59e0b;
+      font-size: 14px;
+
+      .emptyStars {
+        color: #d1d5db;
+      }
+    }
+  }
+
+  .revContent {
+    font-size: 14px;
+    color: $color-text-main;
+    line-height: 1.5;
+  }
+}
+
+.loadingWrapper,
+.notFound {
+  padding: 80px 20px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #e2e8f0;
+  border-top-color: $color-primary;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.backBtn {
+  background: $color-primary;
+  color: #ffffff;
+  padding: 10px 20px;
+  border-radius: $radius-full;
+  font-weight: 600;
+}

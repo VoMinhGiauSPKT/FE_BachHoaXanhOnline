@@ -2,157 +2,387 @@
 @use '../../../../styles/mixins' as *;
 
 .header {
-  background-color: $bhx-green;
-  color: $color-bg-white;
+  background-color: #ffffff;
+  border-bottom: 1px solid $color-border;
   position: sticky;
   top: 0;
   z-index: 100;
-  box-shadow: $shadow-md;
+  box-shadow: $shadow-xs;
 }
 
-.topBar {
-  max-width: 1200px;
+.container {
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 10px 16px;
-  @include flex-between;
+  padding: 12px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: 20px;
 }
 
-.logoArea {
+/* Brand & Leaf Emblem */
+.brand {
   display: flex;
   align-items: center;
   gap: 12px;
+  text-decoration: none;
+  flex-shrink: 0;
 
-  .logo {
+  .leafEmblem {
+    width: 38px;
+    height: 38px;
+    border-radius: $radius-md;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    svg {
+      width: 24px;
+      height: 24px;
+    }
+  }
+
+  .brandText {
     display: flex;
     flex-direction: column;
-    color: $color-bg-white;
 
-    .brandName {
+    .brandMain {
       font-size: 20px;
       font-weight: 800;
-      letter-spacing: 0.5px;
-      color: $bhx-yellow;
+      letter-spacing: -0.3px;
+      color: $color-primary-dark;
       line-height: 1.1;
     }
 
-    .brandSub {
-      font-size: 11px;
-      color: $color-bg-white;
-      opacity: 0.9;
+    .brandTag {
+      font-size: 9px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      color: $color-text-muted;
     }
   }
 }
 
-.searchBox {
-  flex: 1;
-  max-width: 550px;
+/* Location Selector Pill */
+.locationWrap {
   position: relative;
-
-  input {
-    @include input-base;
-    padding: 10px 40px 10px 14px;
-    border-radius: $radius-full;
-    border: none;
-    font-size: 14px;
-
-    &:focus {
-      box-shadow: 0 0 0 3px rgba(254, 209, 0, 0.4);
-    }
-  }
-
-  .searchBtn {
-    position: absolute;
-    right: 6px;
-    top: 50%;
-    transform: translateY(-50%);
-    background: $bhx-yellow;
-    color: $bhx-green-dark;
-    border: none;
-    border-radius: $radius-full;
-    width: 32px;
-    height: 32px;
-    @include flex-center;
-    cursor: pointer;
-    font-size: 14px;
-    font-weight: bold;
-  }
+  flex-shrink: 0;
 }
 
-.userActions {
+.locationPill {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 8px;
+  padding: 6px 14px;
+  background: #f8fafc;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition: all 0.2s ease;
 
-  .actionBtn {
-    @include flex-center;
-    gap: 8px;
-    color: $color-bg-white;
-    font-size: 14px;
-    font-weight: 500;
-    padding: 6px 12px;
-    border-radius: $radius-md;
-    transition: background-color 0.2s ease;
-    cursor: pointer;
-    background: transparent;
-    border: none;
+  &:hover {
+    border-color: $color-primary;
+    background: #ffffff;
+  }
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.15);
+  .pinIcon {
+    font-size: 16px;
+  }
+
+  .locText {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+
+    .locLabel {
+      font-size: 9px;
+      font-weight: 700;
+      color: $color-text-muted;
+      letter-spacing: 0.5px;
     }
 
-    &.loginBtn {
-      background-color: $bhx-yellow;
-      color: $bhx-green-dark;
-      font-weight: 700;
-
-      &:hover {
-        background-color: $bhx-yellow-dark;
-      }
+    .locVal {
+      font-size: 12px;
+      font-weight: 600;
+      color: $color-text-main;
+      white-space: nowrap;
     }
   }
 
-  .userProfile {
+  .arrowIcon {
+    font-size: 12px;
+    color: $color-text-muted;
+    margin-left: 2px;
+  }
+}
+
+.locationMenu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: 240px;
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: 8px 0;
+  z-index: 200;
+  animation: fadeIn 0.15s ease-out;
+
+  .menuTitle {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: $color-text-muted;
+    padding: 6px 14px;
+    border-bottom: 1px solid $color-border-hover;
+    margin-bottom: 4px;
+  }
+
+  .menuItem {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: $color-text-main;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.15s ease;
+
+    &:hover {
+      background: $color-primary-light;
+      color: $color-primary-dark;
+    }
+
+    &.activeItem {
+      font-weight: 700;
+      color: $color-primary-dark;
+      background: #f0fdf4;
+    }
+
+    .check {
+      color: $color-primary;
+      font-weight: bold;
+    }
+  }
+}
+
+/* Live Search Bar */
+.searchBar {
+  flex: 1;
+  max-width: 620px;
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #f8fafc;
+  border: 1.5px solid $color-border;
+  border-radius: $radius-full;
+  padding: 3px 4px 3px 18px;
+  transition: all 0.2s ease;
+
+  &:focus-within {
+    border-color: $color-primary;
+    background: #ffffff;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  }
+
+  input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    font-size: 14px;
+    color: $color-text-main;
+
+    &::placeholder {
+      color: $color-text-muted;
+      font-size: 13.5px;
+    }
+  }
+
+  .searchButton {
+    background: $color-primary;
+    color: #ffffff;
+    font-size: 13.5px;
+    font-weight: 700;
+    padding: 8px 18px;
+    border-radius: $radius-full;
+    transition: all 0.2s ease;
+    box-shadow: $shadow-xs;
+
+    &:hover {
+      background: $color-primary-hover;
+      transform: translateY(-1px);
+    }
+  }
+}
+
+/* User Pill & Cart */
+.actionsGroup {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.signInPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: $radius-full;
+  background: #ffffff;
+  border: 1px solid $color-border;
+  color: $color-text-main;
+  font-size: 14px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $color-primary;
+    color: $color-primary-dark;
+    background: #f0fdf4;
+  }
+
+  .userIcon {
+    font-size: 14px;
+  }
+}
+
+.userWrapper {
+  position: relative;
+}
+
+.userPill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 12px 4px 6px;
+  background: #f8fafc;
+  border: 1px solid $color-border;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    border-color: $color-primary;
+    background: #ffffff;
+  }
+
+  .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: $color-primary;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 700;
     display: flex;
     align-items: center;
-    gap: 8px;
+    justify-content: center;
+  }
+
+  .userMeta {
+    display: flex;
+    flex-direction: column;
+    text-align: left;
+
+    .userHello {
+      font-size: 9px;
+      color: $color-text-muted;
+    }
 
     .userName {
-      font-weight: 600;
-      color: $bhx-yellow;
-    }
-
-    .adminBadgeBtn {
-      background-color: #ffffff;
-      color: $bhx-green-dark;
-      padding: 4px 10px;
-      font-size: 12px;
+      font-size: 13px;
       font-weight: 700;
-      border-radius: $radius-full;
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      transition: all 0.2s ease;
+      color: $color-text-main;
+      max-width: 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
 
-      &:hover {
-        background-color: $bhx-yellow;
-        color: $bhx-green-dark;
-        transform: translateY(-1px);
-      }
+  .arrowIcon {
+    font-size: 12px;
+    color: $color-text-muted;
+  }
+}
+
+.userDropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  box-shadow: $shadow-lg;
+  padding: 6px 0;
+  z-index: 200;
+  animation: fadeIn 0.15s ease-out;
+
+  .dropdownLink {
+    display: block;
+    padding: 10px 16px;
+    font-size: 13px;
+    color: $color-text-main;
+    font-weight: 500;
+    transition: background 0.15s ease;
+    text-align: left;
+    width: 100%;
+
+    &:hover {
+      background: $color-primary-light;
+      color: $color-primary-dark;
     }
 
-    .logoutBtn {
-      background: rgba(255, 255, 255, 0.2);
-      color: #fff;
-      border: none;
-      padding: 4px 10px;
-      font-size: 12px;
-      border-radius: $radius-sm;
-      cursor: pointer;
+    &.logoutOption {
+      border-top: 1px solid $color-border;
+      color: $color-danger;
 
       &:hover {
-        background: rgba(208, 2, 27, 0.8);
+        background: $color-danger-light;
+        color: $color-danger;
       }
     }
+  }
+}
+
+/* Cart Trigger Button */
+.cartButton {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  background: $color-primary-light;
+  border: 1px solid #a7f3d0;
+  border-radius: $radius-full;
+  cursor: pointer;
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: #d1fae5;
+    transform: translateY(-1px);
+    box-shadow: $shadow-xs;
+  }
+
+  .cartIcon {
+    font-size: 16px;
+  }
+
+  .cartPrice {
+    font-size: 14px;
+    font-weight: 700;
+    color: $color-primary-dark;
+  }
+
+  .cartBadge {
+    font-size: 13px;
+    font-weight: 800;
+    color: $color-primary-dark;
+    letter-spacing: -0.2px;
   }
 }

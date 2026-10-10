@@ -1,6 +1,6 @@
 /**
  * Danh sách hằng số các Endpoint API của hệ thống Bách Hóa Xanh Online
- * (Tham chiếu theo tài liệu API_DOCUMENTATION.md)
+ * (Tham chiếu theo tài liệu API_DOCUMENTATION.md và Plan.md)
  */
 
 export const API_ENDPOINTS = {
@@ -72,6 +72,12 @@ export const API_ENDPOINTS = {
   EMPLOYEE: {
     BASE: '/employee',
     DETAIL: (id) => `/employee/${id}`
+  },
+
+  // 11. Thanh toán trực tuyến (Dynamic VietQR / PayOS)
+  PAYMENT: {
+    CREATE: (orderId) => `/payment/create/${orderId}`,
+    STATUS: (orderId) => `/payment/status/${orderId}`
   }
 };
 

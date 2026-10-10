@@ -1,0 +1,238 @@
+@use '../../styles/variables' as *;
+@use '../../styles/mixins' as *;
+
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fadeIn 0.2s ease-out;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.header {
+  padding: 18px 24px;
+  border-bottom: 1px solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+
+  .titleWrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+
+    .qrIcon {
+      font-size: 20px;
+    }
+
+    h3 {
+      font-size: 17px;
+      font-weight: 800;
+      color: $color-text-main;
+    }
+  }
+
+  .closeBtn {
+    font-size: 18px;
+    color: $color-text-muted;
+    padding: 4px 8px;
+    border-radius: $radius-sm;
+
+    &:hover {
+      background: $color-bg-subtle;
+      color: $color-text-main;
+    }
+  }
+}
+
+.content {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 24px;
+  padding: 24px;
+}
+
+@media (max-width: 680px) {
+  .content {
+    grid-template-columns: 1fr;
+  }
+}
+
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.qrContainer {
+  background: #ffffff;
+  border: 1px solid $color-border;
+  border-radius: $radius-lg;
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-shadow: $shadow-xs;
+
+  .qrImage {
+    width: 220px;
+    height: 220px;
+    object-fit: contain;
+  }
+
+  .scanNotice {
+    font-size: 11.5px;
+    color: $color-text-secondary;
+    text-align: center;
+    margin-top: 8px;
+    line-height: 1.35;
+  }
+}
+
+.payosLinkBtn {
+  font-size: 13px;
+  font-weight: 600;
+  color: #2563eb;
+  padding: 8px 14px;
+  border: 1px solid #bfdbfe;
+  border-radius: $radius-full;
+  background: #eff6ff;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: #dbeafe;
+  }
+}
+
+.rightCol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.amountBox {
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: $radius-md;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  .amountLabel {
+    font-size: 13.5px;
+    color: $color-primary-dark;
+    font-weight: 600;
+  }
+
+  .amountValue {
+    font-size: 22px;
+    font-weight: 800;
+    color: #064e3b;
+  }
+}
+
+.bankDetails {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid $color-border;
+  border-radius: $radius-md;
+  padding: 14px 18px;
+}
+
+.detailRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13.5px;
+
+  .label {
+    color: $color-text-secondary;
+  }
+
+  .value {
+    color: $color-text-main;
+  }
+}
+
+.copyGroup {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  .highlightNote {
+    color: #b45309;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+  }
+
+  .copyBtn {
+    font-size: 11.5px;
+    font-weight: 700;
+    color: $color-primary-dark;
+    background: #ffffff;
+    border: 1px solid $color-border;
+    border-radius: $radius-sm;
+    padding: 3px 8px;
+    transition: all 0.15s ease;
+
+    &:hover {
+      border-color: $color-primary;
+      background: $color-primary-light;
+    }
+  }
+}
+
+.warningNote {
+  font-size: 12px;
+  color: #b45309;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: $radius-sm;
+  padding: 8px 12px;
+  line-height: 1.4;
+}
+
+.actionBtns {
+  margin-top: 4px;
+
+  .confirmDoneBtn {
+    width: 100%;
+    padding: 12px;
+    background: $color-primary;
+    color: #ffffff;
+    font-size: 14.5px;
+    font-weight: 700;
+    border-radius: $radius-md;
+    box-shadow: $shadow-primary;
+    transition: background 0.15s ease;
+
+    &:hover:not(:disabled) {
+      background: $color-primary-hover;
+    }
+
+    &:disabled {
+      opacity: 0.6;
+    }
+  }
+}

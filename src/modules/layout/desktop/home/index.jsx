@@ -1,49 +1,142 @@
 import React from 'react';
+import HeroBanner from '../../../../components/HeroBanner';
+import SidebarFilter from '../../../../components/SidebarFilter';
 import ProductCard from '../../../../components/ProductCard';
+import ProductSkeleton from '../../../../components/ProductSkeleton';
+import { SORT_OPTIONS } from '../../../../constants/enums';
 import styles from './DesktopHome.module.scss';
 
 export const DesktopHome = ({
-  products,
-  onAddToCart,
-  deviceInfo
+  products = [],
+  categories = [],
+  selectedCategoryId,
+  onCategoryChange,
+  onPriceFilterApply,
+  inStockOnly,
+  onInStockChange,
+  onResetFilters,
+  sortBy,
+  onSortChange,
+  currentPage,
+  totalPages,
+  totalItems,
+  onPageChange,
+  isLoading,
+  onAddToCart
 }) => {
   return (
     <div className={styles.homeContainer}>
-      {/* Banner Khuyến Mãi */}
-      <section className={styles.heroBanner}>
-        <div className={styles.bannerText}>
-          <h1>BÁCH HÓA XANH - ĐI CHỢ ONLINE</h1>
-          <p>Thực phẩm tươi sạch mỗi ngày • Giảm giá đến 30% hôm nay • Giao siêu tốc 2H</p>
-        </div>
-        <div className={styles.badge}>MUA NGAY GIÁ TỐT</div>
-      </section>
+      {/* Hero Banner Component */}
+      <HeroBanner />
 
-      {/* Thanh thông tin nhận diện thiết bị (Giúp test rõ ràng 3 tiêu chí) */}
-      <section className={styles.deviceInfoBar}>
-        <div>
-          🖥️ Chế độ hiển thị: <span className={styles.highlight}>DESKTOP LAYOUT</span>
+      {/* Main Two-Column Layout */}
+      <div id="catalog-section" className={styles.mainLayout}>
+        {/* Left Sidebar Filter Card */}
+        <div className={styles.sidebarColumn}>
+          <SidebarFilter
+            categories={categories}
+            selectedCategoryId={selectedCategoryId}
+            onCategoryChange={onCategoryChange}
+            onPriceFilterApply={onPriceFilterApply}
+            inStockOnly={inStockOnly}
+            onInStockChange={onInStockChange}
+            onResetFilters={onResetFilters}
+          />
         </div>
-        <div>
-          🔍 Nhận diện: UA: {deviceInfo?.details?.userAgentMatch ? 'Mobile' : 'Desktop'} | 
-          ClientHints: {deviceInfo?.details?.clientHintsOrRouting ? 'Mobile' : 'None'} | 
-          Touch/Pointer: {deviceInfo?.details?.touchPointerMatch ? 'Coarse/Touch' : 'Fine/Mouse'}
-        </div>
-      </section>
 
-      {/* Danh sách sản phẩm tái sử dụng ProductCard */}
-      <section>
-        <h2 className={styles.sectionTitle}>🥩 SẢN PHẨM NỔI BẬT HÔM NAY</h2>
-        <div className={styles.productGrid}>
-          {products.map((product) => (
-            <ProductCard
-              key={product.id}
-              product={product}
-              variant="desktop"
-              onAddToCart={onAddToCart}
-            />
-          ))}
-        </div>
-      </section>
+        {/* Right Catalog Area */}
+        <section className={styles.catalogColumn}>
+          {/* Main Catalog Top Bar */}
+          <div className={styles.catalogBar}>
+            <div className={styles.itemsCounter}>
+              Showing <strong>{isLoading ? '...' : totalItems}</strong> fresh items
+            </div>
+
+            <div className={styles.sortWrapper}>
+              <label htmlFor="sort-select" className={styles.sortLabel}>
+                SORT BY:
+              </label>
+              <select
+                id="sort-select"
+                className={styles.sortDropdown}
+                value={sortBy}
+                onChange={(e) => onSortChange(e.target.value)}
+              >
+                {SORT_OPTIONS.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Product Grid (4 cards per row on desktop) */}
+          <div className={styles.productGrid}>
+            {isLoading ? (
+              <ProductSkeleton count={8} />
+            ) : products.length === 0 ? (
+              <div className={styles.emptyCatalog}>
+                <div className={styles.emptyGraphic}>🥬</div>
+                <h3>Không tìm thấy sản phẩm phù hợp</h3>
+                <p>Thử điều chỉnh lại bộ lọc giá, từ khóa tìm kiếm hoặc chọn danh mục khác nhé!</p>
+                <button
+                  type="button"
+                  className={styles.resetCatalogBtn}
+                  onClick={onResetFilters}
+                >
+                  Xóa toàn bộ bộ lọc
+                </button>
+              </div>
+            ) : (
+              products.map((product) => (
+                <ProductCard
+                  key={product.productId || product.id}
+                  product={product}
+                  variant="desktop"
+                  onAddToCart={onAddToCart}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Pagination Controls */}
+          {totalPages > 1 && (
+            <div className={styles.paginationBar}>
+              <button
+                type="button"
+                className={styles.pageBtn}
+                disabled={currentPage <= 1}
+                onClick={() => onPageChange(currentPage - 1)}
+              >
+                ← Trước
+              </button>
+
+              <div className={styles.pageNumbers}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    className={`${styles.numberBtn} ${p === currentPage ? styles.activePage : ''}`}
+                    onClick={() => onPageChange(p)}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                className={styles.pageBtn}
+                disabled={currentPage >= totalPages}
+                onClick={() => onPageChange(currentPage + 1)}
+              >
+                Sau →
+              </button>
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 };
