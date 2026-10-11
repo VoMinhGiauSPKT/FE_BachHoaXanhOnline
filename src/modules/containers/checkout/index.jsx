@@ -173,33 +173,23 @@ export const CheckoutContainer = () => {
       // Đơn hàng đã lưu vào database -> xóa giỏ hàng ngay lập tức để đồng bộ
       await clearCart();
 
-      // Nếu chọn VietQR -> gọi API Backend tạo link PayOS hoặc mở modal VietQR
+      // Nếu chọn VietQR (PayOS) -> gọi API Backend tạo link và chuyển hướng thẳng sang trang PayOS
       if (paymentMethod === 'VIETQR') {
         const orderId = newOrder.maDonHang || `DH${Date.now()}`;
-        const orderCode = parseInt(orderId.replace(/\D/g, '').slice(-8) || String(Date.now()).slice(-8), 10);
 
         try {
           const payRes = await orderService.createPayment(orderId);
-          if (payRes.data) {
-            setVietQrPaymentData({
-              ...payRes.data,
-              orderId,
-              orderCode: payRes.data.orderCode || orderCode
-            });
+          const checkoutUrl = payRes?.data?.checkoutUrl || (typeof payRes?.data === 'string' ? payRes.data : null);
+          if (checkoutUrl) {
+            window.location.href = checkoutUrl;
+            return;
           } else {
-            throw new Error('No payment data');
+            throw new Error('Không nhận được đường dẫn thanh toán từ PayOS');
           }
-        } catch {
-          // Fallback dữ liệu thanh toán VietQR với đúng trạng thái DANGXULY
-          setVietQrPaymentData({
-            orderId,
-            orderCode,
-            bin: '970422',
-            accountNumber: '0987654321',
-            accountName: 'BACH HOA XANH ONLINE',
-            amount: finalTotal,
-            status: PAYMENT_STATUS.DANGXULY,
-            checkoutUrl: `https://payos.vn/checkout/${orderId}`
+        } catch (payErr) {
+          addToast({
+            type: 'error',
+            message: payErr.message || 'Lỗi khi tạo link thanh toán PayOS. Vui lòng thử lại!'
           });
         }
       } else {

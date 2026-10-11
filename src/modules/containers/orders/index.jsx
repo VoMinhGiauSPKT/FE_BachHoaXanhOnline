@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import DefaultLayout from '../../layout/common/DefaultLayout';
 import orderService from '../../../services/orderService';
 import reviewService from '../../../services/reviewService';
@@ -13,8 +13,30 @@ import { ORDER_STATUS, ORDER_STATUS_LABELS } from '../../../constants/enums';
 import styles from './Orders.module.scss';
 
 export const OrdersContainer = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { isAuthenticated, userType } = useAuthStore();
   const { addToast } = useToastStore();
+
+  // Bắt kết quả chuyển hướng từ PayOS (Cách 2 - Return URL)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const code = searchParams.get('code');
+    const cancel = searchParams.get('cancel');
+
+    if (status === 'PAID' || code === '00') {
+      addToast({
+        type: 'success',
+        message: '🎉 Thanh toán đơn hàng qua PayOS thành công!'
+      });
+      setSearchParams({}, { replace: true });
+    } else if (cancel === 'true') {
+      addToast({
+        type: 'warning',
+        message: '⚠️ Bạn đã huỷ giao dịch thanh toán.'
+      });
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, addToast, setSearchParams]);
 
   const [orders, setOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
