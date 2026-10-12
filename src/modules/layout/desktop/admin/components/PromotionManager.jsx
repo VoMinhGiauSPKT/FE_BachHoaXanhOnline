@@ -71,6 +71,19 @@ export const PromotionManager = ({
     }
   };
 
+  const handleDiscountTypeChange = (val) => {
+    const newType = val || '';
+    setTempDiscountType(newType);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        keyword: tempKeyword,
+        discountTypeFilter: newType
+      });
+    } else {
+      onDiscountTypeFilterChange?.(newType);
+    }
+  };
+
   const handleResetClick = () => {
     setTempKeyword('');
     setTempDiscountType('');
@@ -96,7 +109,7 @@ export const PromotionManager = ({
       discountType: 'TIENMAT',
       discountValue: 20000,
       minOrderAmount: 200000,
-      maxDiscount: 20000,
+      maxDiscount: null,
       usageLimit: 100,
       dates: [dayjs(), dayjs().add(30, 'day')]
     });
@@ -119,7 +132,7 @@ export const PromotionManager = ({
       discountType: dType,
       discountValue: record.discountValue || 0,
       minOrderAmount: record.minOrderAmount || 0,
-      maxDiscount: record.maxDiscount || (dType === 'TIENMAT' ? record.discountValue : 0),
+      maxDiscount: dType === 'PHANTRAM' ? (record.maxDiscount || null) : null,
       usageLimit: record.remainingUsage ?? record.usageLimit ?? 100,
       dates: record.startDate && record.endDate ? [dayjs(record.startDate), dayjs(record.endDate)] : null
     });
@@ -138,7 +151,7 @@ export const PromotionManager = ({
         discountType: detailType,
         discountValue: detail.discountValue !== undefined ? detail.discountValue : (record.discountValue || 0),
         minOrderAmount: detail.minOrderAmount !== undefined ? detail.minOrderAmount : (record.minOrderAmount || 0),
-        maxDiscount: detail.maxDiscount || (detailType === 'TIENMAT' ? detail.discountValue : 0),
+        maxDiscount: detailType === 'PHANTRAM' ? (detail.maxDiscount || null) : null,
         usageLimit: detail.remainingUsage ?? detail.usageLimit ?? record.remainingUsage ?? 100,
         dates: detail.startDate && detail.endDate ? [dayjs(detail.startDate), dayjs(detail.endDate)] : null
       });
@@ -165,7 +178,7 @@ export const PromotionManager = ({
         discountType: dType,
         discountValue: Number(values.discountValue || 0),
         minOrderAmount: Number(values.minOrderAmount || 0),
-        maxDiscount: Number(values.maxDiscount || (dType === 'TIENMAT' ? values.discountValue : 0)),
+        maxDiscount: dType === 'PHANTRAM' && values.maxDiscount ? Number(values.maxDiscount) : null,
         usageLimit: Number(values.usageLimit || 100),
         remainingUsage: Number(values.usageLimit || 100),
         startDate: values.dates ? values.dates[0].format('YYYY-MM-DD') : dayjs().format('YYYY-MM-DD'),
@@ -235,9 +248,16 @@ export const PromotionManager = ({
       render: (_, r) => {
         const isPercent = r.discountType === 'PHANTRAM' || r.discountType === 'PERCENT';
         return (
-          <Text strong style={{ color: '#059669', fontSize: 14 }}>
-            {isPercent ? `${r.discountValue}%` : formatVND(r.discountValue)}
-          </Text>
+          <div>
+            <Text strong style={{ color: '#059669', fontSize: 14 }}>
+              {isPercent ? `${r.discountValue}%` : formatVND(r.discountValue)}
+            </Text>
+            {isPercent && r.maxDiscount && Number(r.maxDiscount) > 0 ? (
+              <div style={{ fontSize: 11, color: '#8c8c8c' }}>
+                Tối đa: {formatVND(r.maxDiscount)}
+              </div>
+            ) : null}
+          </div>
         );
       }
     },
@@ -355,7 +375,7 @@ export const PromotionManager = ({
         <Select
           placeholder="Loại giảm giá"
           value={tempDiscountType}
-          onChange={setTempDiscountType}
+          onChange={handleDiscountTypeChange}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả loại giảm' },
@@ -453,6 +473,22 @@ export const PromotionManager = ({
               rules={[{ required: true, message: 'Vui lòng chọn hình thức giảm giá' }]}
             >
               <Select
+                disabled={!!editingPromo}
+                onChange={(val) => {
+                  if (val === 'PHANTRAM') {
+                    const currentVal = form.getFieldValue('discountValue');
+                    if (!currentVal || currentVal > 100) {
+                      form.setFieldsValue({ discountValue: 10, maxDiscount: 20000 });
+                    }
+                  } else {
+                    const currentVal = form.getFieldValue('discountValue');
+                    if (!currentVal || currentVal <= 100) {
+                      form.setFieldsValue({ discountValue: 20000, maxDiscount: null });
+                    } else {
+                      form.setFieldsValue({ maxDiscount: null });
+                    }
+                  }
+                }}
                 options={[
                   { value: 'TIENMAT', label: 'Tiền mặt trực tiếp (VND)' },
                   { value: 'PHANTRAM', label: 'Tỷ lệ phần trăm (%)' }
@@ -488,6 +524,7 @@ export const PromotionManager = ({
               <InputNumber
                 style={{ width: '100%' }}
                 min={1}
+                disabled={!!editingPromo}
                 max={selectedType === 'PHANTRAM' ? 100 : 10000000}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={value => value.replace(/\$\s?|(,*)/g, '')}
@@ -495,7 +532,11 @@ export const PromotionManager = ({
             </Form.Item>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: selectedType === 'PHANTRAM' ? '1fr 1fr 1fr' : '1fr 1fr',
+            gap: 16
+          }}>
             <Form.Item
               name="minOrderAmount"
               label="Đơn tối thiểu (VND)"
@@ -519,27 +560,30 @@ export const PromotionManager = ({
                 style={{ width: '100%' }}
                 min={0}
                 step={10000}
+                disabled={!!editingPromo}
                 formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                 parser={value => value.replace(/\$\s?|(,*)/g, '')}
               />
             </Form.Item>
 
-            <Form.Item
-              name="maxDiscount"
-              label="Giảm tối đa (VND)"
-              rules={[
-                { required: true, message: 'Nhập giảm tối đa' },
-                { type: 'number', min: 0, message: 'Không được âm' }
-              ]}
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                min={0}
-                step={5000}
-                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={value => value.replace(/\$\s?|(,*)/g, '')}
-              />
-            </Form.Item>
+            {selectedType === 'PHANTRAM' && (
+              <Form.Item
+                name="maxDiscount"
+                label="Giảm tối đa (VND)"
+                rules={[
+                  { required: true, message: 'Nhập giảm tối đa' },
+                  { type: 'number', min: 0, message: 'Không được âm' }
+                ]}
+              >
+                <InputNumber
+                  style={{ width: '100%' }}
+                  min={0}
+                  step={5000}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                />
+              </Form.Item>
+            )}
 
             <Form.Item
               name="usageLimit"

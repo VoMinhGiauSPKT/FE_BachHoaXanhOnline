@@ -7,15 +7,23 @@ import useAuthStore from '../../../../stores/useAuthStore';
 import useToastStore from '../../../../stores/useToastStore';
 import { formatVND } from '../../../../utils/formatCurrency';
 import { formatDate } from '../../../../utils/formatDate';
+import { formatQuantity } from '../../../../utils/formatQuantity';
 import { PATHS } from '../../../../constants/paths';
 import { PRODUCT_UNIT_LABELS } from '../../../../constants/enums';
 import { MOCK_PRODUCTS } from '../../../containers/home/constants';
 import styles from './ProductDetail.module.scss';
 
+const KG_PRESETS = [
+  { label: '0,1 kg', sublabel: '100g', value: 0.1 },
+  { label: '0,2 kg', sublabel: '200g', value: 0.2 },
+  { label: '0,5 kg', sublabel: '500g', value: 0.5 },
+  { label: '1 kg', sublabel: '1000g', value: 1.0 },
+];
+
 export const ProductDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCartStore();
+  const { addToCart, openCart } = useCartStore();
   const { isAuthenticated, user } = useAuthStore();
   const { addToast } = useToastStore();
 
@@ -42,30 +50,13 @@ export const ProductDetail = () => {
         }
       }
     } catch {
-      const mockReviews = [
-        {
-          reviewId: 1,
-          rating: 5,
-          comment: 'Sản phẩm rất tươi ngon, đóng gói cẩn thận, giao nhanh đúng hẹn!',
-          createdAt: '2026-10-09 10:30:00',
-          customer: { fullName: 'Trần Thị Thu Hà' }
-        },
-        {
-          reviewId: 2,
-          rating: 5,
-          comment: 'Chất lượng tuyệt vời, rau củ mọng nước, sẽ tiếp tục ủng hộ FreshMart.',
-          createdAt: '2026-10-08 16:45:00',
-          customer: { fullName: 'Nguyễn Văn Minh' }
-        }
-      ];
-      setReviews(starRating !== null ? mockReviews.filter((r) => r.rating === starRating) : mockReviews);
-      if (!summary) {
-        setSummary({
-          averageRating: 5.0,
-          totalReviews: 2,
-          starCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 2 }
-        });
-      }
+      // Khi không có đánh giá hoặc API lỗi, để reviews rỗng và số lượt đánh giá bằng 0
+      setReviews([]);
+      setSummary((prev) => prev || {
+        averageRating: 0.0,
+        totalReviews: 0,
+        starCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+      });
     } finally {
       setIsReviewsLoading(false);
     }
@@ -84,6 +75,8 @@ export const ProductDetail = () => {
         const prodRes = await productService.getProductById(id);
         if (prodRes.data) {
           setProduct(prodRes.data);
+          const isKg = (prodRes.data.unit || '').toUpperCase() === 'KG';
+          setQuantity(isKg ? 0.5 : 1);
         } else {
           throw new Error('No product');
         }
@@ -99,6 +92,8 @@ export const ProductDetail = () => {
           expiryDate: '2026-12-31'
         };
         setProduct(found);
+        const isKg = (found.unit || '').toUpperCase() === 'KG';
+        setQuantity(isKg ? 0.5 : 1);
       } finally {
         setIsLoading(false);
       }
@@ -111,7 +106,10 @@ export const ProductDetail = () => {
 
   const handleAddToCart = async () => {
     if (!product) return;
-    await addToCart(product, quantity);
+    const success = await addToCart(product, quantity);
+    if (success) {
+      openCart();
+    }
   };
 
   if (isLoading) {
@@ -138,10 +136,23 @@ export const ProductDetail = () => {
   const supplierName = product.supplier?.supplierName || 'FreshMart Farms VietGAP';
   const price = product.price || 0;
   const unit = product.unit || 'KG';
+  const isKg = (unit || '').toUpperCase() === 'KG';
   const displayUnit = PRODUCT_UNIT_LABELS[unit?.toUpperCase()] || unit;
   const stock = product.stock ?? 100;
-  const ratingAverage = product.ratingAverage || summary?.averageRating || 5.0;
-  const totalReviews = product.totalReviews || reviews.length;
+  const calculatedTotal = Math.round(price * quantity);
+
+  // Lấy dữ liệu rating chuẩn thực tế: ưu tiên summary API (tính tức thì từ DanhGia), sau đó tới product API
+  const totalReviews = Number(
+    summary?.totalReviews !== undefined
+      ? summary.totalReviews
+      : (product.totalReviews !== undefined ? product.totalReviews : reviews.length)
+  );
+
+  const rawRatingAvg = summary?.averageRating !== undefined
+    ? summary.averageRating
+    : (product.ratingAverage !== undefined ? product.ratingAverage : 0);
+  const ratingAverage = Number(rawRatingAvg) || 0;
+  const hasReviews = totalReviews > 0 && ratingAverage > 0;
 
   return (
     <div className={styles.detailContainer}>
@@ -179,18 +190,20 @@ export const ProductDetail = () => {
           <div className={styles.categoryPill}>{categoryName}</div>
           <h1 className={styles.productTitle}>{product.productName || product.name}</h1>
 
-          {/* Rating Summary */}
-          <div className={styles.ratingBar}>
-            <div className={styles.stars}>
-              {'★'.repeat(Math.round(ratingAverage))}
-              {'☆'.repeat(5 - Math.round(ratingAverage))}
+          {/* Rating Summary: Chỉ hiển thị khi có đánh giá thật, ẩn sao và số lượng khi chưa có đánh giá */}
+          {hasReviews && (
+            <div className={styles.ratingBar}>
+              <div className={styles.stars}>
+                {'★'.repeat(Math.min(5, Math.max(1, Math.round(ratingAverage))))}
+                {'☆'.repeat(Math.max(0, 5 - Math.min(5, Math.max(1, Math.round(ratingAverage)))))}
+              </div>
+              <span className={styles.ratingScore}>{ratingAverage.toFixed(1).replace(/\.0$/, '')}</span>
+              <span className={styles.dot}>•</span>
+              <a href="#reviews-section" className={styles.reviewCountLink}>
+                {totalReviews} đánh giá từ khách hàng
+              </a>
             </div>
-            <span className={styles.ratingScore}>{ratingAverage}</span>
-            <span className={styles.dot}>•</span>
-            <a href="#reviews-section" className={styles.reviewCountLink}>
-              {totalReviews} đánh giá từ khách hàng
-            </a>
-          </div>
+          )}
 
           {/* Pricing Box */}
           <div className={styles.priceBox}>
@@ -211,8 +224,12 @@ export const ProductDetail = () => {
             </div>
             <div className={styles.specRow}>
               <span className={styles.specLabel}>Tình trạng tồn kho:</span>
-              <span className={`${styles.stockBadge} ${stock > 0 ? styles.inStock : styles.outOfStock}`}>
-                {stock > 0 ? `Còn hàng (${stock} ${displayUnit})` : 'Tạm hết hàng'}
+              <span className={`${styles.stockBadge} ${stock <= 0 ? styles.outOfStock : stock < 10 ? styles.lowStock : styles.inStock}`}>
+                {stock <= 0
+                  ? 'Hết hàng'
+                  : stock < 10
+                  ? `Chỉ còn ${stock} ${displayUnit.toLowerCase()}`
+                  : 'Còn hàng'}
               </span>
             </div>
             {product.expiryDate && (
@@ -227,33 +244,93 @@ export const ProductDetail = () => {
             </div>
           </div>
 
-          {/* Quantity & Add to Cart */}
-          <div className={styles.actionSection}>
-            <div className={styles.quantityPicker}>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                disabled={quantity <= 1}
-              >
-                −
-              </button>
-              <span>{quantity}</span>
-              <button
-                type="button"
-                onClick={() => setQuantity((q) => q + 1)}
-                disabled={quantity >= stock}
-              >
-                +
-              </button>
+          {/* Weight / Quantity Selection Box */}
+          <div className={styles.weightCalculatorCard}>
+            <div className={styles.calcHeader}>
+              <span className={styles.calcTitle}>
+                {isKg ? '⚖️ Chọn Khối Lượng Mua:' : '📦 Chọn Số Lượng Mua:'}
+              </span>
+              {isKg && (
+                <span className={styles.unitHint}>
+                  Giá bán: {formatVND(price)} / kg
+                </span>
+              )}
             </div>
 
+            {/* Bộ nút chọn nhanh khối lượng cho sản phẩm theo kg */}
+            {isKg && (
+              <div className={styles.presetGrid}>
+                {KG_PRESETS.map((p) => {
+                  const isSelected = Math.abs(quantity - p.value) < 0.001;
+                  const presetPrice = Math.round(price * p.value);
+                  return (
+                    <button
+                      key={p.value}
+                      type="button"
+                      className={`${styles.presetBtn} ${isSelected ? styles.presetActive : ''}`}
+                      onClick={() => setQuantity(p.value)}
+                    >
+                      <span className={styles.presetLabel}>{p.label}</span>
+                      <span className={styles.presetSub}>({p.sublabel})</span>
+                      <span className={styles.presetPrice}>{formatVND(presetPrice)}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Stepper điều chỉnh số lượng & Box thành tiền tự động tính */}
+            <div className={styles.calcRow}>
+              <div className={styles.quantityPicker}>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity((q) =>
+                      isKg ? Math.max(0.1, Math.round((q - 0.1) * 10) / 10) : Math.max(1, q - 1)
+                    )
+                  }
+                  disabled={isKg ? quantity <= 0.1 : quantity <= 1}
+                  aria-label="Giảm bớt"
+                >
+                  −
+                </button>
+                <span className={styles.qtyDisplay}>
+                  {formatQuantity(quantity)} {isKg ? 'kg' : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setQuantity((q) =>
+                      isKg
+                        ? Math.min(stock, Math.round((q + 0.1) * 10) / 10)
+                        : Math.min(stock, q + 1)
+                    )
+                  }
+                  disabled={quantity >= stock}
+                  aria-label="Tăng thêm"
+                >
+                  +
+                </button>
+              </div>
+
+              <div className={styles.liveCalculationBox}>
+                <span className={styles.calcLabel}>
+                  {isKg ? `Tạm tính (${formatQuantity(quantity)} kg):` : `Tạm tính (${quantity} món):`}
+                </span>
+                <span className={styles.calcAmount}>{formatVND(calculatedTotal)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Action Button: Thêm vào giỏ */}
+          <div className={styles.actionSection}>
             <button
               type="button"
               className={styles.addToCartBtn}
               onClick={handleAddToCart}
               disabled={stock <= 0}
             >
-              🛒 Thêm {quantity} vào giỏ hàng • {formatVND(price * quantity)}
+              🛒 Thêm {isKg ? `${formatQuantity(quantity)} kg` : `${quantity} ${displayUnit.toLowerCase()}`} vào giỏ hàng • {formatVND(calculatedTotal)}
             </button>
           </div>
         </div>
@@ -263,9 +340,15 @@ export const ProductDetail = () => {
       <section id="reviews-section" className={styles.reviewsSection}>
         <div className={styles.reviewHeader}>
           <h2>⭐ Đánh Giá & Nhận Xét Của Khách Hàng</h2>
-          <div className={styles.ratingBadge}>
-            <strong>{ratingAverage} / 5.0</strong> ({totalReviews} lượt đánh giá)
-          </div>
+          {hasReviews ? (
+            <div className={styles.ratingBadge}>
+              <strong>{ratingAverage.toFixed(1)} / 5.0</strong> ({totalReviews} lượt đánh giá)
+            </div>
+          ) : (
+            <div className={styles.noRatingBadge}>
+              Chưa có đánh giá nào
+            </div>
+          )}
         </div>
 
         {/* Notice for Review Policy */}
@@ -287,32 +370,34 @@ export const ProductDetail = () => {
           </span>
         </div>
 
-        {/* Rating Filter Buttons */}
-        <div className={styles.ratingFilterBar}>
-          <span className={styles.filterTitle}>Lọc theo số sao:</span>
-          <div className={styles.filterButtons}>
-            <button
-              type="button"
-              className={`${styles.filterBtn} ${selectedRating === null ? styles.activeFilter : ''}`}
-              onClick={() => handleRatingFilterChange(null)}
-            >
-              Tất cả ({summary?.totalReviews || reviews.length})
-            </button>
-            {[5, 4, 3, 2, 1].map((star) => {
-              const count = summary?.starCounts?.[String(star)] ?? summary?.starCounts?.[star] ?? 0;
-              return (
-                <button
-                  key={star}
-                  type="button"
-                  className={`${styles.filterBtn} ${selectedRating === star ? styles.activeFilter : ''}`}
-                  onClick={() => handleRatingFilterChange(star)}
-                >
-                  {star} Sao ({count})
-                </button>
-              );
-            })}
+        {/* Rating Filter Buttons: Chỉ hiển thị khi sản phẩm có đánh giá */}
+        {hasReviews && (
+          <div className={styles.ratingFilterBar}>
+            <span className={styles.filterTitle}>Lọc theo số sao:</span>
+            <div className={styles.filterButtons}>
+              <button
+                type="button"
+                className={`${styles.filterBtn} ${selectedRating === null ? styles.activeFilter : ''}`}
+                onClick={() => handleRatingFilterChange(null)}
+              >
+                Tất cả ({summary?.totalReviews || reviews.length})
+              </button>
+              {[5, 4, 3, 2, 1].map((star) => {
+                const count = summary?.starCounts?.[String(star)] ?? summary?.starCounts?.[star] ?? 0;
+                return (
+                  <button
+                    key={star}
+                    type="button"
+                    className={`${styles.filterBtn} ${selectedRating === star ? styles.activeFilter : ''}`}
+                    onClick={() => handleRatingFilterChange(star)}
+                  >
+                    {star} Sao ({count})
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* Reviews List */}
         <div className={styles.reviewList}>

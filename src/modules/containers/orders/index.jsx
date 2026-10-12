@@ -8,13 +8,14 @@ import useToastStore from '../../../stores/useToastStore';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
 import { formatPaymentMethod } from '../../../utils/formatPayment';
+import { formatQuantity } from '../../../utils/formatQuantity';
 import { PATHS } from '../../../constants/paths';
 import { ORDER_STATUS, ORDER_STATUS_LABELS } from '../../../constants/enums';
 import styles from './Orders.module.scss';
 
 export const OrdersContainer = () => {
   const [searchParams, setSearchParams] = useSearchParams();
-  const { isAuthenticated, userType } = useAuthStore();
+  const { isAuthenticated, userType, user } = useAuthStore();
   const { addToast } = useToastStore();
 
   // Bắt kết quả chuyển hướng từ PayOS (Cách 2 - Return URL)
@@ -59,6 +60,50 @@ export const OrdersContainer = () => {
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewComment, setReviewComment] = useState('');
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
+  const [myReviewsMap, setMyReviewsMap] = useState({});
+  const [orderItemsMap, setOrderItemsMap] = useState({});
+  const [dismissedProductIds, setDismissedProductIds] = useState([]);
+  const [reviewedOrderItems, setReviewedOrderItems] = useState({});
+
+  // Tải danh sách sản phẩm đã từng đánh giá theo từng đơn hàng hoặc bị xóa
+  const loadReviewStorage = useCallback(() => {
+    try {
+      const userKey = `freshmart_dismissed_reviews_${user?.customerId || user?.userId || user?.username || 'customer'}`;
+      const revKey = `freshmart_reviewed_order_items_${user?.customerId || user?.userId || user?.username || 'customer'}`;
+      const list = JSON.parse(localStorage.getItem(userKey) || '[]');
+      const revMap = JSON.parse(localStorage.getItem(revKey) || '{}');
+      setDismissedProductIds(list);
+      setReviewedOrderItems(revMap);
+    } catch {
+      setDismissedProductIds([]);
+      setReviewedOrderItems({});
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadReviewStorage();
+    }
+  }, [isAuthenticated, loadReviewStorage]);
+
+  const fetchMyReviews = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await reviewService.getMyReviews({ page: 1, limit: 100 });
+      if (res.data?.reviews) {
+        const map = {};
+        res.data.reviews.forEach((r) => {
+          const pId = r.product?.productId || r.productId;
+          if (pId) {
+            map[pId] = r;
+          }
+        });
+        setMyReviewsMap(map);
+      }
+    } catch {
+      // Bỏ qua lỗi nếu chưa có đánh giá nào
+    }
+  }, [isAuthenticated]);
 
   const fetchOrders = useCallback(async () => {
     setIsLoading(true);
@@ -68,6 +113,24 @@ export const OrdersContainer = () => {
         setOrders(res.data.items);
         setTotalPages(res.data.totalPages || 1);
         setTotalOrders(res.data.total ?? res.data.items.length ?? 0);
+
+        // Pre-fetch chi tiết các đơn đã thanh toán để biết các món bên trong đã đánh giá hết chưa
+        const paidOrders = res.data.items.filter(
+          (o) => o.trangThai === ORDER_STATUS.DATHANHTOAN || o.trangThai === 'COMPLETED'
+        );
+        paidOrders.forEach(async (po) => {
+          try {
+            const detail = await orderService.getOrderById(po.maDonHang);
+            if (detail?.data?.items) {
+              setOrderItemsMap((prev) => ({
+                ...prev,
+                [po.maDonHang]: detail.data.items.map((it) => it.productId)
+              }));
+            }
+          } catch {
+            // ignore
+          }
+        });
       } else {
         setOrders([]);
         setTotalPages(1);
@@ -102,8 +165,9 @@ export const OrdersContainer = () => {
   useEffect(() => {
     if (isAuthenticated) {
       fetchOrders();
+      fetchMyReviews();
     }
-  }, [isAuthenticated, fetchOrders]);
+  }, [isAuthenticated, fetchOrders, fetchMyReviews]);
 
   const handleOpenRepayModal = (order) => {
     setRepayOrder(order);
@@ -177,6 +241,12 @@ export const OrdersContainer = () => {
       const res = await orderService.getOrderById(orderId);
       if (res.data) {
         setSelectedOrder(res.data);
+        if (res.data.items) {
+          setOrderItemsMap((prev) => ({
+            ...prev,
+            [orderId]: res.data.items.map((it) => it.productId)
+          }));
+        }
       } else {
         throw new Error('Not found');
       }
@@ -189,6 +259,90 @@ export const OrdersContainer = () => {
     } finally {
       setIsDetailLoading(false);
     }
+  };
+
+  const getItemReviewStatus = (orderId, productId) => {
+    const itemKey = `${orderId}_${productId}`;
+
+    // 1. Kiểm tra nếu chính đơn hàng này đã được ghi nhận đánh giá
+    if (reviewedOrderItems[itemKey]) {
+      return {
+        isReviewed: true,
+        rating: reviewedOrderItems[itemKey].rating || 5,
+        isDismissed: false
+      };
+    }
+
+    // 2. Kiểm tra nếu đã có bài đánh giá trên hệ thống
+    const existingReview = myReviewsMap[productId];
+    if (existingReview) {
+      // Tìm các đơn hàng đã thanh toán có chứa sản phẩm này, sắp xếp theo ngày đặt tăng dần (cũ -> mới)
+      const ordersWithProduct = orders
+        .filter((o) => {
+          const items = orderItemsMap[o.maDonHang];
+          return (
+            (o.trangThai === ORDER_STATUS.DATHANHTOAN || o.trangThai === 'COMPLETED') &&
+            items &&
+            items.includes(productId)
+          );
+        })
+        .sort((a, b) => new Date(a.ngayLap) - new Date(b.ngayLap));
+
+      if (ordersWithProduct.length > 1) {
+        // Có nhiều lần mua:
+        // Đơn hàng mới nhất là lần mua sau -> Nếu đơn hiện tại là đơn mới nhất và chưa được ghi nhận đánh giá ở bước 1 -> cho phép đánh giá lần 2!
+        const newestOrder = ordersWithProduct[ordersWithProduct.length - 1];
+        if (orderId === newestOrder.maDonHang) {
+          return { isReviewed: false, rating: null, isDismissed: false };
+        }
+      }
+
+      // Đối với đơn hàng cũ tương ứng với bài đánh giá -> hiển thị đã đánh giá
+      return {
+        isReviewed: true,
+        rating: existingReview.rating || 5,
+        isDismissed: false
+      };
+    }
+
+    // 3. Kiểm tra nếu sản phẩm bị xóa đánh giá và không phải lần mua sau
+    if (dismissedProductIds.includes(productId)) {
+      const ordersWithProduct = orders
+        .filter((o) => {
+          const items = orderItemsMap[o.maDonHang];
+          return (
+            (o.trangThai === ORDER_STATUS.DATHANHTOAN || o.trangThai === 'COMPLETED') &&
+            items &&
+            items.includes(productId)
+          );
+        })
+        .sort((a, b) => new Date(a.ngayLap) - new Date(b.ngayLap));
+
+      if (ordersWithProduct.length > 1) {
+        const newestOrder = ordersWithProduct[ordersWithProduct.length - 1];
+        if (orderId === newestOrder.maDonHang) {
+          // Lần mua mới sau khi đã xóa lần cũ -> cho phép đánh giá cho lần mua mới!
+          return { isReviewed: false, rating: null, isDismissed: false };
+        }
+      }
+
+      return {
+        isReviewed: false,
+        rating: null,
+        isDismissed: true
+      };
+    }
+
+    return { isReviewed: false, rating: null, isDismissed: false };
+  };
+
+  const isOrderFullyReviewed = (orderId) => {
+    const pIds = orderItemsMap[orderId];
+    if (!pIds || pIds.length === 0) return false;
+    return pIds.every((pId) => {
+      const st = getItemReviewStatus(orderId, pId);
+      return st.isReviewed || st.isDismissed;
+    });
   };
 
   const handleOpenReviewItem = (item) => {
@@ -207,7 +361,7 @@ export const OrdersContainer = () => {
 
     setIsReviewSubmitting(true);
     try {
-      await reviewService.createReview({
+      const res = await reviewService.createReview({
         productId: reviewModalItem.productId,
         rating: reviewRating,
         comment: reviewComment.trim()
@@ -216,11 +370,43 @@ export const OrdersContainer = () => {
         type: 'success',
         message: `Đánh giá sản phẩm "${reviewModalItem.productName}" thành công!`
       });
+      const createdId = res?.data?.reviewId || Date.now();
+
+      // Lưu trạng thái đã đánh giá cho đơn hàng cụ thể này
+      if (selectedOrder?.maDonHang) {
+        const itemKey = `${selectedOrder.maDonHang}_${reviewModalItem.productId}`;
+        const revKey = `freshmart_reviewed_order_items_${user?.customerId || user?.userId || user?.username || 'customer'}`;
+        const nextReviewed = {
+          ...reviewedOrderItems,
+          [itemKey]: { rating: reviewRating, date: new Date().toISOString() }
+        };
+        setReviewedOrderItems(nextReviewed);
+        try {
+          localStorage.setItem(revKey, JSON.stringify(nextReviewed));
+        } catch {
+          // ignore
+        }
+      }
+
+      setMyReviewsMap((prev) => ({
+        ...prev,
+        [reviewModalItem.productId]: {
+          reviewId: createdId,
+          rating: reviewRating,
+          comment: reviewComment.trim(),
+          createdAt: new Date().toISOString(),
+          product: {
+            productId: reviewModalItem.productId,
+            productName: reviewModalItem.productName
+          }
+        }
+      }));
       setReviewModalItem(null);
+      fetchMyReviews(); // Cập nhật lại danh sách bài đánh giá ở background
     } catch (err) {
       addToast({
         type: 'error',
-        message: err?.response?.data?.message || 'Không thể gửi đánh giá cho sản phẩm này!'
+        message: err?.response?.data?.message || err.message || 'Không thể gửi đánh giá cho sản phẩm này!'
       });
     } finally {
       setIsReviewSubmitting(false);
@@ -312,6 +498,27 @@ export const OrdersContainer = () => {
                         >
                           Chi tiết
                         </button>
+                        {(o.trangThai === ORDER_STATUS.DATHANHTOAN || o.trangThai === 'COMPLETED') && (
+                          isOrderFullyReviewed(o.maDonHang) ? (
+                            <button
+                              type="button"
+                              className={styles.reviewOrderBtnDone}
+                              disabled
+                              title="Tất cả sản phẩm trong hóa đơn này đã hoàn tất đánh giá"
+                            >
+                              ✅ Đã đánh giá
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className={styles.reviewOrderBtn}
+                              onClick={() => handleViewDetail(o.maDonHang)}
+                              title="Đánh giá các sản phẩm trong hóa đơn này"
+                            >
+                              ⭐ Đánh giá
+                            </button>
+                          )
+                        )}
                         {(o.trangThai === ORDER_STATUS.CHUATHANHTOAN || o.trangThai === 'PENDING') && (
                           <button
                             type="button"
@@ -433,18 +640,50 @@ export const OrdersContainer = () => {
                           </span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <span className={styles.qty}>×{it.quantity}</span>
+                          <span className={styles.qty}>
+                            ×{formatQuantity(it.quantity)}{(it.unit || '').toUpperCase() === 'KG' ? ' kg' : ''}
+                          </span>
                           <strong className={styles.subtotal}>
-                            {formatVND(it.itemTotal || it.price * it.quantity)}
+                            {formatVND(it.itemTotal || Math.round(it.price * it.quantity))}
                           </strong>
-                          {selectedOrder.trangThai === ORDER_STATUS.DATHANHTOAN && (
-                            <button
-                              type="button"
-                              className={styles.itemReviewBtn}
-                              onClick={() => handleOpenReviewItem(it)}
-                            >
-                              ⭐ Đánh giá
-                            </button>
+                          {(selectedOrder.trangThai === ORDER_STATUS.DATHANHTOAN || selectedOrder.trangThai === 'COMPLETED') && (
+                            (() => {
+                              const st = getItemReviewStatus(selectedOrder.maDonHang, it.productId);
+                              if (st.isReviewed) {
+                                return (
+                                  <button
+                                    type="button"
+                                    className={styles.itemReviewedDisabledBtn}
+                                    disabled
+                                    title="Bạn đã đánh giá sản phẩm này trong đơn hàng này. Để chỉnh sửa nhận xét, vui lòng vào Hồ sơ > Đánh giá của tôi"
+                                  >
+                                    ✅ Đã đánh giá ({st.rating}★)
+                                  </button>
+                                );
+                              }
+                              if (st.isDismissed) {
+                                return (
+                                  <button
+                                    type="button"
+                                    className={styles.itemDismissedDisabledBtn}
+                                    disabled
+                                    title="Đánh giá cho sản phẩm này trong đơn hàng này đã hoàn tất và không thể đánh giá lại"
+                                  >
+                                    🔒 Đã đánh giá
+                                  </button>
+                                );
+                              }
+                              return (
+                                <button
+                                  type="button"
+                                  className={styles.itemReviewBtn}
+                                  onClick={() => handleOpenReviewItem(it)}
+                                  title="Đánh giá chất lượng sản phẩm này cho lần mua này"
+                                >
+                                  ⭐ Đánh giá
+                                </button>
+                              );
+                            })()
                           )}
                         </div>
                       </div>
@@ -521,7 +760,7 @@ export const OrdersContainer = () => {
           </div>
         )}
 
-        {/* Modal Đánh giá sản phẩm */}
+        {/* Modal Đánh giá / Chỉnh sửa đánh giá sản phẩm */}
         {reviewModalItem && (
           <div className={styles.modalOverlay} onClick={() => setReviewModalItem(null)}>
             <div className={styles.reviewModalCard} onClick={(e) => e.stopPropagation()}>
@@ -571,13 +810,22 @@ export const OrdersContainer = () => {
                   />
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isReviewSubmitting}
-                  className={styles.reviewSubmitBtn}
-                >
-                  {isReviewSubmitting ? 'Đang gửi...' : 'Gửi Đánh Giá Ngay'}
-                </button>
+                <div className={styles.reviewModalFooter}>
+                  <button
+                    type="button"
+                    className={styles.reviewCancelBtn}
+                    onClick={() => setReviewModalItem(null)}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isReviewSubmitting}
+                    className={styles.reviewSubmitBtn}
+                  >
+                    {isReviewSubmitting ? 'Đang gửi...' : '⭐ Gửi Đánh Giá Ngay'}
+                  </button>
+                </div>
               </form>
             </div>
           </div>

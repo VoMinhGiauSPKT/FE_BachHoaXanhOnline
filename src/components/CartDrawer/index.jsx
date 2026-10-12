@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import useCartStore from '../../stores/useCartStore';
 import useAuthStore from '../../stores/useAuthStore';
 import { formatVND } from '../../utils/formatCurrency';
+import { formatQuantity } from '../../utils/formatQuantity';
 import { PATHS } from '../../constants/paths';
 import styles from './CartDrawer.module.scss';
 
@@ -103,32 +104,48 @@ export const CartDrawer = () => {
                     <div className={styles.itemInfo}>
                       <h4 className={styles.itemName}>{item.productName}</h4>
                       <div className={styles.itemMeta}>
-                        <span className={styles.unit}>{item.unit || 'Phần'}</span>
+                        <span className={styles.unit}>
+                          {(item.unit || '').toUpperCase() === 'KG' ? 'Theo kg' : (item.unit || 'Phần')}
+                        </span>
                         <span className={styles.price}>{formatVND(item.price)}</span>
                       </div>
 
                       <div className={styles.actionRow}>
-                        <div className={styles.counter}>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(lineId, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            aria-label="Giảm"
-                          >
-                            −
-                          </button>
-                          <span>{item.quantity}</span>
-                          <button
-                            type="button"
-                            onClick={() => updateQuantity(lineId, item.quantity + 1)}
-                            aria-label="Tăng"
-                          >
-                            +
-                          </button>
-                        </div>
+                        {(() => {
+                          const isKg = (item.unit || '').toUpperCase() === 'KG';
+                          const minQty = isKg ? 0.1 : 1;
+                          const nextDecr = isKg
+                            ? Math.max(minQty, Math.round((item.quantity - 0.1) * 10) / 10)
+                            : Math.max(1, item.quantity - 1);
+                          const nextIncr = isKg
+                            ? Math.round((item.quantity + 0.1) * 10) / 10
+                            : item.quantity + 1;
+                          return (
+                            <div className={styles.counter}>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(lineId, nextDecr)}
+                                disabled={item.quantity <= minQty}
+                                aria-label="Giảm"
+                              >
+                                −
+                              </button>
+                              <span>
+                                {formatQuantity(item.quantity)}{isKg ? ' kg' : ''}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateQuantity(lineId, nextIncr)}
+                                aria-label="Tăng"
+                              >
+                                +
+                              </button>
+                            </div>
+                          );
+                        })()}
 
                         <div className={styles.itemSubtotal}>
-                          {formatVND(item.itemTotal || item.price * item.quantity)}
+                          {formatVND(item.itemTotal || Math.round(item.price * item.quantity))}
                         </div>
 
                         <button

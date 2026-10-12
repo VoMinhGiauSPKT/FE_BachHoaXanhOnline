@@ -76,6 +76,34 @@ export const EmployeeManager = ({
     }
   };
 
+  const handlePositionChange = (val) => {
+    const newPos = val || '';
+    setTempPosition(newPos);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        positionFilter: newPos,
+        statusFilter: tempStatus
+      });
+    } else {
+      onPositionFilterChange?.(newPos);
+    }
+  };
+
+  const handleStatusChange = (val) => {
+    const newStatus = val !== undefined ? val : '';
+    setTempStatus(newStatus);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        positionFilter: tempPosition,
+        statusFilter: newStatus
+      });
+    } else {
+      onStatusFilterChange?.(newStatus);
+    }
+  };
+
   const handleResetClick = () => {
     setTempSearch('');
     setTempPosition('');
@@ -141,16 +169,18 @@ export const EmployeeManager = ({
       const values = await form.validateFields();
       setIsSubmitting(true);
 
+      const cleanEmail = values.email?.trim() || null;
       const payload = {
         fullName: values.fullName.trim(),
         username: values.username.trim(),
-        email: values.email?.trim() || undefined,
+        email: cleanEmail,
         phoneNumber: values.phoneNumber?.trim(),
         position: values.position
       };
 
       if (values.password) {
         payload.password = values.password;
+        payload.newPassword = values.password;
       }
 
       let res;
@@ -312,7 +342,7 @@ export const EmployeeManager = ({
     >
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
-          placeholder="Tìm theo họ tên, username hoặc số điện thoại..."
+          placeholder="Tìm theo mã NV, họ tên, username hoặc số điện thoại..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
           value={tempSearch}
           onChange={(e) => setTempSearch(e.target.value)}
@@ -324,7 +354,7 @@ export const EmployeeManager = ({
         <Select
           placeholder="Chức vụ"
           value={tempPosition}
-          onChange={setTempPosition}
+          onChange={handlePositionChange}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả chức vụ' },
@@ -336,7 +366,7 @@ export const EmployeeManager = ({
         <Select
           placeholder="Trạng thái"
           value={tempStatus}
-          onChange={setTempStatus}
+          onChange={handleStatusChange}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },
@@ -413,8 +443,9 @@ export const EmployeeManager = ({
                 name="username"
                 label="Tên đăng nhập (Username)"
                 rules={[
-                  { required: true, message: 'Nhập tên đăng nhập' },
-                  { pattern: /^[a-zA-Z0-9_-]{4,20}$/, message: '4-20 ký tự, không dấu' }
+                  { required: true, message: 'Vui lòng nhập tên đăng nhập' },
+                  { min: 4, max: 20, message: 'Tên đăng nhập phải từ 4-20 ký tự' },
+                  { pattern: /^[a-zA-Z0-9_-]+$/, message: 'Không được chứa ký tự đặc biệt hoặc dấu tiếng Việt' }
                 ]}
               >
                 <Input placeholder="staff_01" disabled={Boolean(editingEmployee)} />

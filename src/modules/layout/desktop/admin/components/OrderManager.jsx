@@ -35,8 +35,14 @@ export const OrderManager = ({
   page = 1,
   limit = 20,
   total = 0,
+  search = '',
+  statusFilter = '',
   selectedOrderDetail = null,
   isDetailLoading = false,
+  onSearchSubmit,
+  onResetFilters,
+  onSearchChange,
+  onStatusFilterChange,
   onPageChange,
   onViewOrderDetail,
   onCloseOrderDetail,
@@ -44,34 +50,51 @@ export const OrderManager = ({
   onCancelOrder,
   onRefresh
 }) => {
-  const [tempSearch, setTempSearch] = useState('');
-  const [tempStatus, setTempStatus] = useState('');
-  const [appliedSearch, setAppliedSearch] = useState('');
-  const [appliedStatus, setAppliedStatus] = useState('');
+  const [tempSearch, setTempSearch] = useState(search);
+  const [tempStatus, setTempStatus] = useState(statusFilter);
+
+  React.useEffect(() => {
+    setTempSearch(search);
+  }, [search]);
+  React.useEffect(() => {
+    setTempStatus(statusFilter);
+  }, [statusFilter]);
 
   const handleSearchClick = () => {
-    setAppliedSearch(tempSearch.trim());
-    setAppliedStatus(tempStatus);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        statusFilter: tempStatus
+      });
+    } else {
+      onSearchChange?.(tempSearch);
+      onStatusFilterChange?.(tempStatus);
+    }
+  };
+
+  const handleStatusChange = (val) => {
+    const newStatus = val || '';
+    setTempStatus(newStatus);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        statusFilter: newStatus
+      });
+    } else {
+      onStatusFilterChange?.(newStatus);
+    }
   };
 
   const handleResetClick = () => {
     setTempSearch('');
     setTempStatus('');
-    setAppliedSearch('');
-    setAppliedStatus('');
-  };
-
-  const filteredOrders = orders.filter((o) => {
-    if (appliedStatus && o.trangThai !== appliedStatus) return false;
-    if (appliedSearch) {
-      const term = appliedSearch.toLowerCase();
-      const codeMatch = o.maDonHang?.toLowerCase().includes(term);
-      const nameMatch = o.tenNguoiNhan?.toLowerCase().includes(term);
-      const phoneMatch = o.soDienThoaiNhan?.toLowerCase().includes(term);
-      return codeMatch || nameMatch || phoneMatch;
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      onSearchChange?.('');
+      onStatusFilterChange?.('');
     }
-    return true;
-  });
+  };
 
   const columns = [
     {
@@ -86,10 +109,29 @@ export const OrderManager = ({
       )
     },
     {
+      title: 'Người Nhận & SĐT',
+      key: 'receiver',
+      width: 180,
+      render: (_, record) => (
+        record.tenNguoiNhan ? (
+          <div>
+            <Text strong style={{ fontSize: 13 }}>{record.tenNguoiNhan}</Text>
+            {record.soDienThoaiNhan && (
+              <div style={{ fontSize: 12, color: '#64748b', marginTop: 2 }}>
+                📞 {record.soDienThoaiNhan}
+              </div>
+            )}
+          </div>
+        ) : (
+          <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 12 }}>Xem trong chi tiết</span>
+        )
+      )
+    },
+    {
       title: 'Ngày Lập',
       dataIndex: 'ngayLap',
       key: 'ngayLap',
-      width: 170,
+      width: 160,
       render: (date) => formatDate(date, true)
     },
     {
@@ -98,11 +140,16 @@ export const OrderManager = ({
       key: 'tongTien',
       width: 140,
       align: 'right',
-      render: (amount) => (
-        <Text strong style={{ color: '#059669', fontSize: 14 }}>
-          {formatVND(amount)}
-        </Text>
-      )
+      render: (amount, record) => {
+        const finalPrice = (record.tongTienSauGiamGia !== undefined && record.tongTienSauGiamGia !== null && Number(record.tongTienSauGiamGia) > 0)
+          ? record.tongTienSauGiamGia
+          : amount;
+        return (
+          <Text strong style={{ color: '#059669', fontSize: 14 }}>
+            {formatVND(finalPrice)}
+          </Text>
+        );
+      }
     },
     {
       title: 'Hình Thức TT',
@@ -228,12 +275,13 @@ export const OrderManager = ({
         <Select
           placeholder="Lọc trạng thái"
           value={tempStatus}
-          onChange={setTempStatus}
+          onChange={handleStatusChange}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },
             { value: 'CHUATHANHTOAN', label: 'Chưa thanh toán' },
-            { value: 'DATHANHTOAN', label: 'Đã thanh toán' }
+            { value: 'DATHANHTOAN', label: 'Đã thanh toán' },
+            { value: 'DAHUY', label: 'Đã hủy' }
           ]}
         />
 
@@ -257,7 +305,7 @@ export const OrderManager = ({
       <Table
         rowKey="maDonHang"
         columns={columns}
-        dataSource={filteredOrders}
+        dataSource={orders}
         loading={isLoading}
         bordered
         pagination={{

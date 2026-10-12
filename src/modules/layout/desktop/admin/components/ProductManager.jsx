@@ -86,6 +86,34 @@ export const ProductManager = ({
     }
   };
 
+  const handleCategoryChange = (val) => {
+    const newCat = val || '';
+    setTempCategory(newCat);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        categoryFilter: newCat,
+        inStockFilter: tempInStock
+      });
+    } else {
+      onCategoryFilterChange?.(newCat);
+    }
+  };
+
+  const handleInStockChange = (val) => {
+    const newStock = val !== undefined ? val : '';
+    setTempInStock(newStock);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        categoryFilter: tempCategory,
+        inStockFilter: newStock
+      });
+    } else {
+      onInStockFilterChange?.(newStock);
+    }
+  };
+
   const handleResetClick = () => {
     setTempSearch('');
     setTempCategory('');
@@ -203,16 +231,18 @@ export const ProductManager = ({
     try {
       const values = await form.validateFields();
       setIsSubmitting(true);
+      const computedPrice = calculateSellingPrice(values.importPrice, values.categoryId, values.vat);
+      const finalPrice = Number(values.sellingPrice || computedPrice || 0);
       const payload = {
         ...values,
         productId: editingProduct ? (editingProduct.productId || editingProduct.id) : undefined,
         expiryDate: values.expiryDate ? values.expiryDate.format('YYYY-MM-DD') : null,
         stock: Number(values.stock || 0),
         quantity: Number(values.stock || 0),
-        sellingPrice: Number(values.sellingPrice || 0),
-        price: Number(values.sellingPrice || 0),
+        sellingPrice: finalPrice,
+        price: finalPrice,
         importPrice: Number(values.importPrice || 0),
-        vat: Number(values.vat || 0.08)
+        vat: Number(values.vat !== undefined ? values.vat : 0.08)
       };
 
       const res = await onSaveProduct(payload, editingProduct ? (editingProduct.productId || editingProduct.id) : null);
@@ -385,7 +415,7 @@ export const ProductManager = ({
       {/* Thanh lọc & tìm kiếm */}
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
-          placeholder="Tìm tên sản phẩm theo từ khóa..."
+          placeholder="Tìm theo tên hoặc mã sản phẩm..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
           value={tempSearch}
           onChange={(e) => setTempSearch(e.target.value)}
@@ -397,7 +427,7 @@ export const ProductManager = ({
         <Select
           placeholder="Lọc theo Danh mục"
           value={tempCategory || undefined}
-          onChange={(val) => setTempCategory(val || '')}
+          onChange={handleCategoryChange}
           allowClear
           style={{ width: 200 }}
           options={[
@@ -409,7 +439,7 @@ export const ProductManager = ({
         <Select
           placeholder="Trạng thái tồn kho"
           value={tempInStock}
-          onChange={(val) => setTempInStock(val !== undefined ? val : '')}
+          onChange={handleInStockChange}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả tồn kho' },
@@ -595,19 +625,17 @@ export const ProductManager = ({
                 label={
                   <Space size={4}>
                     <span>Giá bán (VND)</span>
-                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                    <Tag color="cyan" style={{ fontSize: 11, fontWeight: 600 }}>Tự động tính</Tag>
                   </Space>
                 }
-                rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
+                rules={[{ required: true, message: 'Giá bán được tự động tính theo giá nhập' }]}
               >
                 <InputNumber
-                  disabled={Boolean(editingProduct)}
-                  style={{ width: '100%', fontWeight: 700, color: '#059669' }}
-                  min={0}
-                  step={1000}
+                  disabled
+                  style={{ width: '100%', fontWeight: 700, color: '#059669', backgroundColor: '#f8fafc' }}
                   formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
                   parser={value => value.replace(/\$\s?|(,*)/g, '')}
-                  placeholder="Nhập giá bán..."
+                  placeholder="Giá bán tự động theo công thức..."
                 />
               </Form.Item>
             </div>
@@ -620,17 +648,17 @@ export const ProductManager = ({
                   const vatRate = Number(getFieldValue('vat') !== undefined ? getFieldValue('vat') : 0.08);
                   const cat = categories.find(c => c.categoryId === catId);
                   const margin = cat?.profitMargin ?? 15;
-                  const sell = Number(getFieldValue('sellingPrice') || 0);
+                  const sell = Number(getFieldValue('sellingPrice') || calculateSellingPrice(imp, catId, vatRate) || 0);
 
                   return (
                     <div style={{
                       marginTop: -8,
                       marginBottom: 16,
-                      padding: '8px 12px',
+                      padding: '10px 14px',
                       background: '#f0fdf4',
                       borderRadius: 8,
                       border: '1px solid #bbf7d0',
-                      fontSize: 12,
+                      fontSize: 12.5,
                       color: '#166534',
                       display: 'flex',
                       alignItems: 'center',
@@ -639,7 +667,7 @@ export const ProductManager = ({
                       gap: 8
                     }}>
                       <div>
-                        <strong>💡 Công thức định giá:</strong> Giá nhập ({formatVND(imp)}) × (1 + Tỷ suất LN {margin}%) × (1 + Thuế VAT {vatRate * 100}%)
+                        <strong>💡 Công thức định giá:</strong> Giá nhập ({formatVND(imp)}) × (1 + Tỷ suất LN {margin}%) × (1 + Thuế VAT {Math.round(vatRate * 100)}%)
                       </div>
                       <div>
                         <strong>= {formatVND(sell)}</strong>

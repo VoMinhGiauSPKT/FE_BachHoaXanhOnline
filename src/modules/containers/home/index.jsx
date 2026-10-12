@@ -110,7 +110,7 @@ export const HomeContainer = () => {
       } else if (sortBy === 'price_desc') {
         filtered.sort((a, b) => b.price - a.price);
       } else if (sortBy === 'rating') {
-        filtered.sort((a, b) => (b.ratingAverage || 5) - (a.ratingAverage || 5));
+        filtered.sort((a, b) => (b.ratingAverage || 0) - (a.ratingAverage || 0));
       } else if (sortBy === 'newest') {
         filtered.reverse();
       }

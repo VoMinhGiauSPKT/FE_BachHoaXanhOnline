@@ -36,13 +36,14 @@ export const useAuthStore = create(
         set({ isLoading: true, error: null });
         try {
           const res = await authService.login({ username, password });
-          const { accessToken, userType, customer, employee } = res.data;
+          const { accessToken, refreshToken, userType, customer, employee } = res.data;
 
           const userInfo = customer || employee || { username, userType };
           const position = employee?.position || userInfo?.position || null;
 
           set({
             accessToken,
+            refreshToken: refreshToken || null,
             userType,
             position,
             user: userInfo,
@@ -153,6 +154,7 @@ export const useAuthStore = create(
       partialize: (state) => ({
         user: state.user,
         accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
         userType: state.userType,
         position: state.position,
         isAuthenticated: state.isAuthenticated

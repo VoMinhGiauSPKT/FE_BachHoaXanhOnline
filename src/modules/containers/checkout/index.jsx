@@ -9,6 +9,7 @@ import useCartStore from '../../../stores/useCartStore';
 import useAuthStore from '../../../stores/useAuthStore';
 import useToastStore from '../../../stores/useToastStore';
 import { formatVND } from '../../../utils/formatCurrency';
+import { formatQuantity } from '../../../utils/formatQuantity';
 import { PATHS } from '../../../constants/paths';
 import { DISCOUNT_TYPES, PAYMENT_STATUS, ORDER_STATUS } from '../../../constants/enums';
 import styles from './Checkout.module.scss';
@@ -446,10 +447,14 @@ export const CheckoutContainer = () => {
                 {items.map((item) => (
                   <div key={item.lineItemId} className={styles.itemRow}>
                     <span className={styles.itemName}>
-                      {item.productName} <strong>×{item.quantity}</strong>
+                      {item.productName}{' '}
+                      <strong>
+                        ×{formatQuantity(item.quantity)}
+                        {(item.unit || '').toUpperCase() === 'KG' ? ' kg' : ''}
+                      </strong>
                     </span>
                     <span className={styles.itemPrice}>
-                      {formatVND(item.itemTotal || item.price * item.quantity)}
+                      {formatVND(item.itemTotal || Math.round(item.price * item.quantity))}
                     </span>
                   </div>
                 ))}

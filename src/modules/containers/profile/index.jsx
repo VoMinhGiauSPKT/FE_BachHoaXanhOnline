@@ -47,6 +47,12 @@ export const ProfileContainer = () => {
   const [reviewTotalPages, setReviewTotalPages] = useState(1);
   const [reviewTotal, setReviewTotal] = useState(0);
 
+  // Chỉnh sửa đánh giá
+  const [editingReview, setEditingReview] = useState(null);
+  const [editRating, setEditRating] = useState(5);
+  const [editComment, setEditComment] = useState('');
+  const [isUpdatingReview, setIsUpdatingReview] = useState(false);
+
   // Tải profile
   useEffect(() => {
     const fetchProfile = async () => {
@@ -282,11 +288,69 @@ export const ProfileContainer = () => {
     }
   };
 
+  // Mở modal chỉnh sửa bài đánh giá
+  const handleOpenEditReview = (rev) => {
+    setEditingReview(rev);
+    setEditRating(rev.rating || 5);
+    setEditComment(rev.comment || '');
+  };
+
+  // Lưu chỉnh sửa bài đánh giá (Gọi PUT /review/:id)
+  const handleSaveEditReview = async (e) => {
+    e.preventDefault();
+    if (!editingReview) return;
+    if (!editComment.trim()) {
+      addToast({ type: 'warning', message: 'Vui lòng nhập nội dung đánh giá sản phẩm!' });
+      return;
+    }
+
+    setIsUpdatingReview(true);
+    try {
+      await reviewService.updateReview(editingReview.reviewId, {
+        rating: editRating,
+        comment: editComment.trim()
+      });
+      addToast({ type: 'success', message: 'Cập nhật bài đánh giá thành công!' });
+      setEditingReview(null);
+      // Cập nhật trực tiếp vào state myReviews
+      setMyReviews((prev) =>
+        prev.map((r) =>
+          r.reviewId === editingReview.reviewId
+            ? { ...r, rating: editRating, comment: editComment.trim() }
+            : r
+        )
+      );
+      loadMyReviews(reviewPage);
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err?.response?.data?.message || err.message || 'Không thể cập nhật bài đánh giá!'
+      });
+    } finally {
+      setIsUpdatingReview(false);
+    }
+  };
+
   // Xóa review
   const handleDeleteReview = async (id) => {
     try {
+      const reviewToDelete = myReviews.find((r) => r.reviewId === id);
+      const prodId = reviewToDelete?.product?.productId || reviewToDelete?.productId;
+      if (prodId) {
+        try {
+          const userKey = `freshmart_dismissed_reviews_${user?.customerId || user?.userId || user?.username || 'customer'}`;
+          const currentList = JSON.parse(localStorage.getItem(userKey) || '[]');
+          if (!currentList.includes(prodId)) {
+            currentList.push(prodId);
+            localStorage.setItem(userKey, JSON.stringify(currentList));
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       await reviewService.deleteReview(id);
-      addToast({ type: 'info', message: 'Đã xóa bài đánh giá!' });
+      addToast({ type: 'info', message: 'Đã xóa bài đánh giá thành công!' });
       await loadMyReviews(myReviews.length === 1 && reviewPage > 1 ? reviewPage - 1 : reviewPage);
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Không thể xóa!' });
@@ -544,13 +608,22 @@ export const ProfileContainer = () => {
                       <p className={styles.myRevComment}>"{rev.comment}"</p>
                       <div className={styles.myRevBottom}>
                         <span className={styles.myRevTime}>{formatDate(rev.createdAt, true)}</span>
-                        <button
-                          type="button"
-                          className={styles.deleteRevBtn}
-                          onClick={() => handleDeleteReview(rev.reviewId)}
-                        >
-                          🗑️ Xóa đánh giá
-                        </button>
+                        <div className={styles.myRevActionButtons}>
+                          <button
+                            type="button"
+                            className={styles.editRevBtn}
+                            onClick={() => handleOpenEditReview(rev)}
+                          >
+                            ✏️ Sửa đánh giá
+                          </button>
+                          <button
+                            type="button"
+                            className={styles.deleteRevBtn}
+                            onClick={() => handleDeleteReview(rev.reviewId)}
+                          >
+                            🗑️ Xóa
+                          </button>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -749,6 +822,76 @@ export const ProfileContainer = () => {
                   Xác nhận xóa
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Popup Modal Chỉnh Sửa Đánh Giá Sản Phẩm */}
+        {editingReview && (
+          <div className={styles.modalOverlay} onClick={() => setEditingReview(null)}>
+            <div className={styles.editReviewModalCard} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.modalHeader}>
+                <h3>✏️ Chỉnh Sửa Đánh Giá</h3>
+                <button
+                  type="button"
+                  className={styles.closeBtn}
+                  onClick={() => setEditingReview(null)}
+                >
+                  ✕
+                </button>
+              </div>
+              <form onSubmit={handleSaveEditReview} className={styles.editReviewBody}>
+                <div className={styles.productReviewHeader}>
+                  <strong>{editingReview.product?.productName || 'Sản phẩm FreshMart'}</strong>
+                  {editingReview.product?.unit && (
+                    <span className={styles.unitText}>Đơn vị tính: {editingReview.product.unit}</span>
+                  )}
+                </div>
+
+                <div className={styles.ratingSection}>
+                  <label>Số sao đánh giá:</label>
+                  <div className={styles.starPicker}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <span
+                        key={star}
+                        className={`${styles.starIcon} ${star <= editRating ? styles.filled : ''}`}
+                        onClick={() => setEditRating(star)}
+                      >
+                        ★
+                      </span>
+                    ))}
+                    <span className={styles.starText}>{editRating}/5 sao</span>
+                  </div>
+                </div>
+
+                <div className={styles.commentSection}>
+                  <label>Nội dung nhận xét:</label>
+                  <textarea
+                    className={styles.reviewTextarea}
+                    rows={4}
+                    value={editComment}
+                    onChange={(e) => setEditComment(e.target.value)}
+                    placeholder="Chia sẻ trải nghiệm sử dụng sản phẩm của bạn..."
+                  />
+                </div>
+
+                <div className={styles.modalActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelBtn}
+                    onClick={() => setEditingReview(null)}
+                  >
+                    Hủy bỏ
+                  </button>
+                  <button
+                    type="submit"
+                    className={styles.submitBtn}
+                    disabled={isUpdatingReview}
+                  >
+                    {isUpdatingReview ? 'Đang lưu...' : '💾 Lưu Thay Đổi'}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
         )}

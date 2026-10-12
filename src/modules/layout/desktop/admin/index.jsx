@@ -47,8 +47,14 @@ export const DesktopAdmin = ({
   orderPage = 1,
   orderLimit = 20,
   orderTotal = 0,
+  orderSearch = '',
+  orderStatusFilter = '',
   isOrderLoading = false,
   selectedOrderDetail = null,
+  onOrderSearchSubmit,
+  onOrderResetFilters,
+  onOrderSearchChange,
+  onOrderStatusFilterChange,
   onOrderPageChange,
   onViewOrderDetail,
   onCloseOrderDetail,
@@ -180,7 +186,13 @@ export const DesktopAdmin = ({
               page={orderPage}
               limit={orderLimit}
               total={orderTotal}
+              search={orderSearch}
+              statusFilter={orderStatusFilter}
               selectedOrderDetail={selectedOrderDetail}
+              onSearchSubmit={onOrderSearchSubmit}
+              onResetFilters={onOrderResetFilters}
+              onSearchChange={onOrderSearchChange}
+              onStatusFilterChange={onOrderStatusFilterChange}
               onPageChange={onOrderPageChange}
               onViewOrderDetail={onViewOrderDetail}
               onCloseOrderDetail={onCloseOrderDetail}

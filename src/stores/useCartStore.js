@@ -23,8 +23,8 @@ export const useCartStore = create(
        * Đồng bộ lại số lượng và tổng tiền từ items cục bộ
        */
       recalculateGuestTotals: (items) => {
-        const totalItems = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        const totalAmount = items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+        const totalItems = items.length;
+        const totalAmount = Math.round(items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0));
         return { items, totalItems, totalAmount };
       },
 
@@ -88,11 +88,28 @@ export const useCartStore = create(
             (it) => (it.productId || it.id) === prodId
           );
 
+          const maxStock = product.stock !== undefined ? Number(product.stock) : (currentItems[existingIndex]?.availableStock ?? 99);
           if (existingIndex > -1) {
-            currentItems[existingIndex].quantity += quantity;
+            if (currentItems[existingIndex].quantity + quantity > maxStock) {
+              toast({
+                type: 'warning',
+                message: `Số lượng trong giỏ hàng đã đạt giới hạn tồn kho (${maxStock})!`
+              });
+              return false;
+            }
+            currentItems[existingIndex].quantity = Math.round((currentItems[existingIndex].quantity + quantity) * 100) / 100;
+            currentItems[existingIndex].availableStock = maxStock;
             currentItems[existingIndex].itemTotal =
-              currentItems[existingIndex].quantity * (currentItems[existingIndex].price || product.price);
+              Math.round(currentItems[existingIndex].quantity * (currentItems[existingIndex].price || product.price));
           } else {
+            if (quantity > maxStock) {
+              toast({
+                type: 'warning',
+                message: `Số lượng yêu cầu vượt quá tồn kho hiện có (${maxStock})!`
+              });
+              return false;
+            }
+            const cleanQty = Math.round(quantity * 100) / 100;
             currentItems.push({
               lineItemId: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
               productId: prodId,
@@ -100,9 +117,9 @@ export const useCartStore = create(
               imageUrl: product.imageUrl || product.icon,
               unit: product.unit || 'Phần',
               price: product.price || 0,
-              quantity: quantity,
-              itemTotal: (product.price || 0) * quantity,
-              availableStock: product.stock || 99
+              quantity: cleanQty,
+              itemTotal: Math.round((product.price || 0) * cleanQty),
+              availableStock: maxStock
             });
           }
 
@@ -124,11 +141,13 @@ export const useCartStore = create(
           return get().removeItem(lineItemId);
         }
 
+        const cleanNewQty = Math.round(newQuantity * 100) / 100;
+
         const { isAuthenticated, userType } = useAuthStore.getState();
         if (isAuthenticated && userType === 'CUSTOMER') {
           set({ isLoading: true });
           try {
-            await cartService.updateItemQuantity(lineItemId, newQuantity);
+            await cartService.updateItemQuantity(lineItemId, cleanNewQty);
             await get().fetchCart();
           } catch (err) {
             useToastStore.getState().addToast({
@@ -139,12 +158,20 @@ export const useCartStore = create(
             set({ isLoading: false });
           }
         } else {
+          const itemToUpdate = get().items.find((it) => it.lineItemId === lineItemId);
+          if (itemToUpdate && itemToUpdate.availableStock && cleanNewQty > itemToUpdate.availableStock) {
+            useToastStore.getState().addToast({
+              type: 'warning',
+              message: `Số lượng tối đa còn trong kho là ${itemToUpdate.availableStock}!`
+            });
+            return;
+          }
           const currentItems = get().items.map((it) => {
             if (it.lineItemId === lineItemId) {
               return {
                 ...it,
-                quantity: newQuantity,
-                itemTotal: it.price * newQuantity
+                quantity: cleanNewQty,
+                itemTotal: Math.round((it.price || 0) * cleanNewQty)
               };
             }
             return it;

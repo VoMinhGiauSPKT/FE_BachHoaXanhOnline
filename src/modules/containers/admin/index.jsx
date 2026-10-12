@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import useAuthStore from '../../../stores/useAuthStore';
 import useToastStore from '../../../stores/useToastStore';
@@ -122,6 +122,9 @@ export const AdminContainer = () => {
     if (newLimit && newLimit !== productLimit) {
       setProductLimit(newLimit);
       setProductPage(1);
+      loadProducts({ page: 1, limit: newLimit });
+    } else {
+      loadProducts({ page: newPage });
     }
   };
 
@@ -297,23 +300,34 @@ export const AdminContainer = () => {
   // 3. ORDERS STATE & PAGINATION
   // ==========================================
   const [orders, setOrders] = useState([]);
+  const [orderSearch, setOrderSearch] = useState('');
+  const [orderStatusFilter, setOrderStatusFilter] = useState('');
   const [orderPage, setOrderPage] = useState(1);
   const [orderLimit, setOrderLimit] = useState(20);
   const [orderTotal, setOrderTotal] = useState(0);
   const [selectedAdminOrder, setSelectedAdminOrder] = useState(null);
   const [isOrderLoading, setIsOrderLoading] = useState(false);
 
-  const loadOrders = useCallback(async () => {
+  const loadOrders = useCallback(async (overrides = {}) => {
     setIsOrderLoading(true);
     try {
-      const res = await orderService.getOrders({
-        page: orderPage,
-        limit: orderLimit
-      });
+      const page = overrides.page !== undefined ? overrides.page : orderPage;
+      const limit = overrides.limit !== undefined ? overrides.limit : orderLimit;
+      const kw = overrides.search !== undefined ? overrides.search : orderSearch;
+      const st = overrides.statusFilter !== undefined ? overrides.statusFilter : orderStatusFilter;
+
+      const params = {
+        page,
+        limit
+      };
+      if (kw && kw.trim()) params.keyword = kw.trim();
+      if (st && st.trim()) params.status = st.trim();
+
+      const res = await orderService.getOrders(params);
       if (res.data?.items) {
         setOrders(res.data.items);
         const calculatedTotal = res.data.total ??
-          (res.data.totalPages ? res.data.totalPages * orderLimit : res.data.items.length);
+          (res.data.totalPages ? res.data.totalPages * limit : res.data.items.length);
         setOrderTotal(calculatedTotal);
       } else {
         setOrders([]);
@@ -326,13 +340,30 @@ export const AdminContainer = () => {
     } finally {
       setIsOrderLoading(false);
     }
-  }, [orderPage, orderLimit]);
+  }, [orderPage, orderLimit, orderSearch, orderStatusFilter]);
+
+  const handleOrderSearchSubmit = ({ search, statusFilter }) => {
+    setOrderSearch(search || '');
+    setOrderStatusFilter(statusFilter || '');
+    setOrderPage(1);
+    loadOrders({ search: search || '', statusFilter: statusFilter || '', page: 1 });
+  };
+
+  const handleOrderResetFilters = () => {
+    setOrderSearch('');
+    setOrderStatusFilter('');
+    setOrderPage(1);
+    loadOrders({ search: '', statusFilter: '', page: 1 });
+  };
 
   const handleOrderPageChange = (newPage, newLimit) => {
     setOrderPage(newPage);
     if (newLimit && newLimit !== orderLimit) {
       setOrderLimit(newLimit);
       setOrderPage(1);
+      loadOrders({ page: 1, limit: newLimit });
+    } else {
+      loadOrders({ page: newPage });
     }
   };
 
@@ -442,6 +473,9 @@ export const AdminContainer = () => {
     if (newLimit && newLimit !== promoLimit) {
       setPromoLimit(newLimit);
       setPromoPage(1);
+      loadPromotions({ page: 1, limit: newLimit });
+    } else {
+      loadPromotions({ page: newPage });
     }
   };
 
@@ -553,6 +587,9 @@ export const AdminContainer = () => {
     if (newLimit && newLimit !== empLimit) {
       setEmpLimit(newLimit);
       setEmpPage(1);
+      loadEmployees({ page: 1, limit: newLimit });
+    } else {
+      loadEmployees({ page: newPage });
     }
   };
 
@@ -754,8 +791,14 @@ export const AdminContainer = () => {
         orderPage={orderPage}
         orderLimit={orderLimit}
         orderTotal={orderTotal}
+        orderSearch={orderSearch}
+        orderStatusFilter={orderStatusFilter}
         isOrderLoading={isOrderLoading}
         selectedOrderDetail={selectedAdminOrder}
+        onOrderSearchSubmit={handleOrderSearchSubmit}
+        onOrderResetFilters={handleOrderResetFilters}
+        onOrderSearchChange={(val) => { setOrderSearch(val); setOrderPage(1); }}
+        onOrderStatusFilterChange={(val) => { setOrderStatusFilter(val); setOrderPage(1); }}
         onOrderPageChange={handleOrderPageChange}
         onViewOrderDetail={handleViewOrderDetail}
         onCloseOrderDetail={() => setSelectedAdminOrder(null)}

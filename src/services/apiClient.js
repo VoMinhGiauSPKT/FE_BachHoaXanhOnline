@@ -100,10 +100,20 @@ apiClient.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        // Gửi yêu cầu cấp lại access token mới (cookie refreshToken được gửi tự động)
+        // Lấy refreshToken từ storage dự phòng nếu cookie không sẵn sàng
+        let storedRefreshToken = null;
+        try {
+          const authStorage = localStorage.getItem(STORAGE_KEYS.AUTH);
+          if (authStorage) {
+            const parsed = JSON.parse(authStorage);
+            storedRefreshToken = parsed?.state?.refreshToken || null;
+          }
+        } catch (_) {}
+
+        // Gửi yêu cầu cấp lại access token mới (hỗ trợ cả HttpOnly cookie và body dự phòng)
         const refreshResponse = await axios.post(
           `${BASE_URL}/auth/refresh`,
-          {},
+          storedRefreshToken ? { refreshToken: storedRefreshToken } : {},
           { withCredentials: true }
         );
 

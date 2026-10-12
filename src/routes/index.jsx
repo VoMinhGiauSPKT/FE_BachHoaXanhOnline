@@ -1,18 +1,48 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import HomeContainer from '../modules/containers/home';
 import LoginContainer from '../modules/containers/login';
-import ProductDetailContainer from '../modules/containers/productDetail';
-import CheckoutContainer from '../modules/containers/checkout';
-import OrdersContainer from '../modules/containers/orders';
-import ProfileContainer from '../modules/containers/profile';
-import AdminContainer from '../modules/containers/admin';
 import ProtectedRoute from './ProtectedRoute';
 import { PATHS } from '../constants/paths';
 
+// Code Splitting (Lazy Loading) các trang con và module Admin dung lượng lớn
+const ProductDetailContainer = React.lazy(() => import('../modules/containers/productDetail'));
+const CheckoutContainer = React.lazy(() => import('../modules/containers/checkout'));
+const OrdersContainer = React.lazy(() => import('../modules/containers/orders'));
+const ProfileContainer = React.lazy(() => import('../modules/containers/profile'));
+const AdminContainer = React.lazy(() => import('../modules/containers/admin'));
+
+// Loading Fallback mượt mà trong khi tải chunk route
+const RouteLoadingFallback = () => (
+  <div style={{
+    minHeight: '65vh',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: '14px',
+    color: '#059669',
+    fontFamily: 'Inter, system-ui, sans-serif'
+  }}>
+    <div style={{
+      width: '42px',
+      height: '42px',
+      border: '3.5px solid #d1fae5',
+      borderTopColor: '#059669',
+      borderRadius: '50%',
+      animation: 'spin 0.8s linear infinite'
+    }} />
+    <span style={{ fontSize: '14px', fontWeight: 600, color: '#475569' }}>
+      Đang tải trang...
+    </span>
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </div>
+);
+
 export const AppRoutes = () => {
   return (
-    <Routes>
+    <Suspense fallback={<RouteLoadingFallback />}>
+      <Routes>
       {/* 1. Tuyến đường công khai & Khách hàng mua sắm */}
       <Route path={PATHS.HOME} element={<HomeContainer />} />
       <Route path={PATHS.LOGIN} element={<LoginContainer />} />
@@ -130,6 +160,7 @@ export const AppRoutes = () => {
       {/* Điều hướng mặc định nếu route không tồn tại */}
       <Route path="*" element={<Navigate to={PATHS.HOME} replace />} />
     </Routes>
+  </Suspense>
   );
 };
 
