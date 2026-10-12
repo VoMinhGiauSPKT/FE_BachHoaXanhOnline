@@ -71,6 +71,32 @@ export const ReviewManager = ({
     }
   };
 
+  const handleRatingChange = (val) => {
+    setTempRating(val);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        keyword: tempKeyword,
+        ratingFilter: val,
+        statusFilter: tempStatus
+      });
+    } else {
+      onRatingFilterChange?.(val);
+    }
+  };
+
+  const handleStatusChange = (val) => {
+    setTempStatus(val);
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        keyword: tempKeyword,
+        ratingFilter: tempRating,
+        statusFilter: val
+      });
+    } else {
+      onStatusFilterChange?.(val);
+    }
+  };
+
   const handleResetClick = () => {
     setTempKeyword('');
     setTempRating('');
@@ -268,19 +294,19 @@ export const ReviewManager = ({
     >
       <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
-          placeholder="Tìm theo nội dung đánh giá hoặc tên SP..."
+          placeholder="Tìm theo nội dung, tên/mã SP, khách hàng, SĐT..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
           value={tempKeyword}
           onChange={(e) => setTempKeyword(e.target.value)}
           onPressEnter={handleSearchClick}
           allowClear
-          style={{ width: 340 }}
+          style={{ width: 360 }}
         />
 
         <Select
           placeholder="Số sao đánh giá"
           value={tempRating}
-          onChange={setTempRating}
+          onChange={handleRatingChange}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả mức sao' },
@@ -295,7 +321,7 @@ export const ReviewManager = ({
         <Select
           placeholder="Trạng thái hiển thị"
           value={tempStatus}
-          onChange={setTempStatus}
+          onChange={handleStatusChange}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },

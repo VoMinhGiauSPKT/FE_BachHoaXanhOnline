@@ -5,7 +5,6 @@ import orderService from '../../../services/orderService';
 import reviewService from '../../../services/reviewService';
 import useAuthStore from '../../../stores/useAuthStore';
 import useToastStore from '../../../stores/useToastStore';
-import VietQRModal from '../../../components/VietQRModal';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
 import { formatPaymentMethod } from '../../../utils/formatPayment';
@@ -53,7 +52,7 @@ export const OrdersContainer = () => {
   const [repayOrder, setRepayOrder] = useState(null);
   const [repayMethod, setRepayMethod] = useState('VIETQR');
   const [isRepaying, setIsRepaying] = useState(false);
-  const [vietQrPaymentData, setVietQrPaymentData] = useState(null);
+  const [repayingOrderId, setRepayingOrderId] = useState(null);
 
   // Modal đánh giá sản phẩm (dành cho đơn hàng DATHANHTOAN)
   const [reviewModalItem, setReviewModalItem] = useState(null);
@@ -112,6 +111,31 @@ export const OrdersContainer = () => {
     setRepayMethod(initialMethod);
   };
 
+  const handlePayOrder = async (order) => {
+    // Nếu đơn hàng là hình thức trực tuyến (VIETQR / PAYOS / CHUYENKHOAN) -> chuyển thẳng sang trang PayOS
+    if (order.phuongThucTT === 'VIETQR' || order.phuongThucTT === 'PAYOS' || order.phuongThucTT === 'CHUYENKHOAN') {
+      setRepayingOrderId(order.maDonHang);
+      try {
+        const payRes = await orderService.createPayment(order.maDonHang);
+        const checkoutUrl = payRes?.data?.checkoutUrl || (typeof payRes?.data === 'string' ? payRes.data : null);
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
+        }
+        throw new Error('Không nhận được đường dẫn thanh toán từ PayOS');
+      } catch (err) {
+        addToast({
+          type: 'error',
+          message: err?.response?.data?.message || err.message || 'Không thể tạo liên kết thanh toán PayOS. Vui lòng thử lại!'
+        });
+        setRepayingOrderId(null);
+      }
+    } else {
+      // Đơn hàng COD -> mở modal cho phép chuyển đổi sang thanh toán PayOS
+      handleOpenRepayModal(order);
+    }
+  };
+
   const handleConfirmRepay = async () => {
     if (!repayOrder) return;
     setIsRepaying(true);
@@ -127,17 +151,14 @@ export const OrdersContainer = () => {
       } else {
         // Cập nhật phương thức thành VIETQR nếu cần
         await orderService.changePaymentMethod(repayOrder.maDonHang, 'VIETQR');
-        // Tạo link giao dịch PayOS
+        // Tạo link giao dịch PayOS và chuyển hướng thẳng sang trang thanh toán PayOS
         const payRes = await orderService.createPayment(repayOrder.maDonHang);
-        const data = payRes?.data;
-        if (data) {
-          setVietQrPaymentData({
-            ...data,
-            orderId: repayOrder.maDonHang
-          });
-          setRepayOrder(null);
+        const checkoutUrl = payRes?.data?.checkoutUrl || (typeof payRes?.data === 'string' ? payRes.data : null);
+        if (checkoutUrl) {
+          window.location.href = checkoutUrl;
+          return;
         } else {
-          throw new Error('Không thể khởi tạo mã VietQR từ hệ thống.');
+          throw new Error('Không nhận được đường dẫn thanh toán từ PayOS');
         }
       }
     } catch (err) {
@@ -148,15 +169,6 @@ export const OrdersContainer = () => {
     } finally {
       setIsRepaying(false);
     }
-  };
-
-  const handleVietQrSuccess = async () => {
-    setVietQrPaymentData(null);
-    addToast({
-      type: 'success',
-      message: '🎉 Thanh toán đơn hàng thành công!'
-    });
-    await fetchOrders();
   };
 
   const handleViewDetail = async (orderId) => {
@@ -304,9 +316,10 @@ export const OrdersContainer = () => {
                           <button
                             type="button"
                             className={styles.repayBtn}
-                            onClick={() => handleOpenRepayModal(o)}
+                            disabled={repayingOrderId === o.maDonHang}
+                            onClick={() => handlePayOrder(o)}
                           >
-                            💳 Thanh toán lại
+                            {repayingOrderId === o.maDonHang ? '⏳ Đang chuyển tới PayOS...' : '💳 Thanh toán lại'}
                           </button>
                         )}
                       </div>
@@ -455,19 +468,45 @@ export const OrdersContainer = () => {
 
                 {/* Nút thanh toán lại trong modal nếu đơn chưa thanh toán */}
                 {(selectedOrder.trangThai === ORDER_STATUS.CHUATHANHTOAN || selectedOrder.trangThai === 'PENDING') && (
-                  <div style={{ marginTop: 20, textAlign: 'right' }}>
-                    <button
-                      type="button"
-                      className={styles.repayBtn}
-                      style={{ padding: '10px 22px', fontSize: '14px' }}
-                      onClick={() => {
-                        const ord = selectedOrder;
-                        setSelectedOrder(null);
-                        handleOpenRepayModal(ord);
-                      }}
-                    >
-                      💳 Thanh toán lại đơn hàng này
-                    </button>
+                  <div style={{ marginTop: 20, display: 'flex', justifyContent: 'flex-end', gap: 10, flexWrap: 'wrap' }}>
+                    {selectedOrder.phuongThucTT === 'VIETQR' || selectedOrder.phuongThucTT === 'PAYOS' || selectedOrder.phuongThucTT === 'CHUYENKHOAN' ? (
+                      <>
+                        <button
+                          type="button"
+                          className={styles.cancelModalBtn}
+                          style={{ padding: '8px 16px', fontSize: '13.5px' }}
+                          onClick={() => {
+                            const ord = selectedOrder;
+                            setSelectedOrder(null);
+                            handleOpenRepayModal(ord);
+                          }}
+                        >
+                          💵 Đổi sang nhận hàng COD
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.repayBtn}
+                          style={{ padding: '8px 20px', fontSize: '14px' }}
+                          disabled={repayingOrderId === selectedOrder.maDonHang}
+                          onClick={() => handlePayOrder(selectedOrder)}
+                        >
+                          {repayingOrderId === selectedOrder.maDonHang ? '⏳ Đang chuyển tới PayOS...' : '💳 Thanh toán lại qua PayOS'}
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        type="button"
+                        className={styles.repayBtn}
+                        style={{ padding: '8px 20px', fontSize: '14px' }}
+                        onClick={() => {
+                          const ord = selectedOrder;
+                          setSelectedOrder(null);
+                          handleOpenRepayModal(ord);
+                        }}
+                      >
+                        💳 Chuyển sang thanh toán PayOS
+                      </button>
+                    )}
                   </div>
                 )}
 
@@ -582,8 +621,8 @@ export const OrdersContainer = () => {
                       </div>
                       <span className={styles.icon}>📱</span>
                       <div className={styles.details}>
-                        <span className={styles.title}>Quét mã Dynamic VietQR (PayOS)</span>
-                        <span className={styles.desc}>Chuyển khoản 24/7 qua App ngân hàng hoặc ví điện tử</span>
+                        <span className={styles.title}>Cổng thanh toán PayOS (VietQR / Thẻ ATM)</span>
+                        <span className={styles.desc}>Chuyển hướng đến cổng thanh toán PayOS an toàn và bảo mật</span>
                       </div>
                     </div>
 
@@ -619,24 +658,12 @@ export const OrdersContainer = () => {
                     disabled={isRepaying}
                     onClick={handleConfirmRepay}
                   >
-                    {isRepaying ? 'Đang xử lý...' : repayMethod === 'VIETQR' ? 'Tiếp tục quét mã VietQR' : 'Xác nhận chuyển sang COD'}
+                    {isRepaying ? 'Đang chuyển tới PayOS...' : repayMethod === 'VIETQR' ? 'Tiếp tục thanh toán qua PayOS' : 'Xác nhận chuyển sang COD'}
                   </button>
                 </div>
               </div>
             </div>
           </div>
-        )}
-
-        {/* Dynamic VietQR Modal */}
-        {vietQrPaymentData && (
-          <VietQRModal
-            paymentData={vietQrPaymentData}
-            onPaymentSuccess={handleVietQrSuccess}
-            onClose={() => {
-              setVietQrPaymentData(null);
-              fetchOrders();
-            }}
-          />
         )}
       </div>
     </DefaultLayout>

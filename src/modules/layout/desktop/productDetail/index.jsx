@@ -24,6 +24,57 @@ export const ProductDetail = () => {
   const [summary, setSummary] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedRating, setSelectedRating] = useState(null);
+  const [isReviewsLoading, setIsReviewsLoading] = useState(false);
+
+  const loadReviews = async (starRating = null) => {
+    setIsReviewsLoading(true);
+    try {
+      const params = {};
+      if (starRating !== null) {
+        params.rating = starRating;
+      }
+      const revRes = await reviewService.getProductReviews(id, params);
+      if (revRes.data) {
+        setReviews(revRes.data.reviews || []);
+        if (revRes.data.summary) {
+          setSummary(revRes.data.summary);
+        }
+      }
+    } catch {
+      const mockReviews = [
+        {
+          reviewId: 1,
+          rating: 5,
+          comment: 'Sản phẩm rất tươi ngon, đóng gói cẩn thận, giao nhanh đúng hẹn!',
+          createdAt: '2026-10-09 10:30:00',
+          customer: { fullName: 'Trần Thị Thu Hà' }
+        },
+        {
+          reviewId: 2,
+          rating: 5,
+          comment: 'Chất lượng tuyệt vời, rau củ mọng nước, sẽ tiếp tục ủng hộ FreshMart.',
+          createdAt: '2026-10-08 16:45:00',
+          customer: { fullName: 'Nguyễn Văn Minh' }
+        }
+      ];
+      setReviews(starRating !== null ? mockReviews.filter((r) => r.rating === starRating) : mockReviews);
+      if (!summary) {
+        setSummary({
+          averageRating: 5.0,
+          totalReviews: 2,
+          starCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 2 }
+        });
+      }
+    } finally {
+      setIsReviewsLoading(false);
+    }
+  };
+
+  const handleRatingFilterChange = (star) => {
+    setSelectedRating(star);
+    loadReviews(star);
+  };
 
   // Load product detail & reviews
   useEffect(() => {
@@ -48,40 +99,11 @@ export const ProductDetail = () => {
           expiryDate: '2026-12-31'
         };
         setProduct(found);
-      }
-
-      // Fetch reviews
-      try {
-        const revRes = await reviewService.getProductReviews(id);
-        if (revRes.data) {
-          setReviews(revRes.data.reviews || []);
-          setSummary(revRes.data.summary || null);
-        }
-      } catch {
-        setReviews([
-          {
-            reviewId: 1,
-            rating: 5,
-            comment: 'Sản phẩm rất tươi ngon, đóng gói cẩn thận, giao nhanh đúng hẹn!',
-            createdAt: '2026-10-09 10:30:00',
-            customer: { fullName: 'Trần Thị Thu Hà' }
-          },
-          {
-            reviewId: 2,
-            rating: 5,
-            comment: 'Chất lượng tuyệt vời, rau củ mọng nước, sẽ tiếp tục ủng hộ FreshMart.',
-            createdAt: '2026-10-08 16:45:00',
-            customer: { fullName: 'Nguyễn Văn Minh' }
-          }
-        ]);
-        setSummary({
-          averageRating: 5.0,
-          totalReviews: 2,
-          starCounts: { 1: 0, 2: 0, 3: 0, 4: 0, 5: 2 }
-        });
       } finally {
         setIsLoading(false);
       }
+
+      await loadReviews(null);
     };
 
     fetchDetail();
@@ -265,10 +287,46 @@ export const ProductDetail = () => {
           </span>
         </div>
 
+        {/* Rating Filter Buttons */}
+        <div className={styles.ratingFilterBar}>
+          <span className={styles.filterTitle}>Lọc theo số sao:</span>
+          <div className={styles.filterButtons}>
+            <button
+              type="button"
+              className={`${styles.filterBtn} ${selectedRating === null ? styles.activeFilter : ''}`}
+              onClick={() => handleRatingFilterChange(null)}
+            >
+              Tất cả ({summary?.totalReviews || reviews.length})
+            </button>
+            {[5, 4, 3, 2, 1].map((star) => {
+              const count = summary?.starCounts?.[String(star)] ?? summary?.starCounts?.[star] ?? 0;
+              return (
+                <button
+                  key={star}
+                  type="button"
+                  className={`${styles.filterBtn} ${selectedRating === star ? styles.activeFilter : ''}`}
+                  onClick={() => handleRatingFilterChange(star)}
+                >
+                  {star} Sao ({count})
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
         {/* Reviews List */}
         <div className={styles.reviewList}>
-          {reviews.length === 0 ? (
-            <p className={styles.noReviews}>Chưa có bài đánh giá nào cho sản phẩm này.</p>
+          {isReviewsLoading ? (
+            <div className={styles.reviewLoading}>
+              <div className={styles.smallSpinner} />
+              <span>Đang tải đánh giá...</span>
+            </div>
+          ) : reviews.length === 0 ? (
+            <p className={styles.noReviews}>
+              {selectedRating
+                ? `Chưa có bài đánh giá nào ${selectedRating} sao cho sản phẩm này.`
+                : 'Chưa có bài đánh giá nào cho sản phẩm này.'}
+            </p>
           ) : (
             reviews.map((rev) => (
               <div key={rev.reviewId} className={styles.reviewCard}>
