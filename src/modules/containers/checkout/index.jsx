@@ -86,42 +86,37 @@ export const CheckoutContainer = () => {
     const fetchPromos = async () => {
       try {
         const res = await promotionService.getAvailablePromotions(totalAmount);
-        if (res.data && Array.isArray(res.data)) {
-          setPromotions(res.data);
+        const list = res?.data || res;
+        if (Array.isArray(list)) {
+          setPromotions(list);
         }
       } catch {
         // Fallback demo vouchers chuẩn PostgreSQL enum_loai_khuyenmai
-        setPromotions([
-          {
-            promotionCode: 'FRESH20K',
-            promotionName: 'Giảm 20.000đ cho đơn từ 150k',
-            discountType: DISCOUNT_TYPES.TIENMAT,
-            discountValue: 20000,
-            minOrderAmount: 150000,
-            estimatedDiscount: 20000,
-            isEligible: totalAmount >= 150000,
-            unmetReason: totalAmount < 150000 ? 'Đơn hàng chưa đạt tối thiểu 150.000đ' : null
-          },
-          {
-            promotionCode: 'ORGANIC10',
-            promotionName: 'Giảm 10% tối đa 30.000đ',
-            discountType: DISCOUNT_TYPES.PHANTRAM,
-            discountValue: 10,
-            minOrderAmount: 200000,
-            estimatedDiscount: Math.min(30000, totalAmount * 0.1),
-            isEligible: totalAmount >= 200000,
-            unmetReason: totalAmount < 200000 ? 'Đơn hàng chưa đạt tối thiểu 200.000đ' : null
-          }
-        ]);
+        setPromotions([]);
       }
     };
 
     fetchPromos();
   }, [isAuthenticated, totalAmount]);
 
-  const discountAmount = selectedPromo?.estimatedDiscount || 0;
-  const shippingFee = totalAmount >= 300000 ? 0 : 15000;
-  const finalTotal = Math.max(0, totalAmount - discountAmount + shippingFee);
+  const discountAmount = React.useMemo(() => {
+    if (!selectedPromo) return 0;
+    const type = selectedPromo.discountType;
+    if (type === 'TIENMAT') {
+      return Number(selectedPromo.discountValue || 0);
+    }
+    if (type === 'PHANTRAM') {
+      const pct = Number(selectedPromo.discountValue || 0);
+      let calculated = totalAmount * (pct / 100);
+      if (selectedPromo.maxDiscount && calculated > Number(selectedPromo.maxDiscount)) {
+        calculated = Number(selectedPromo.maxDiscount);
+      }
+      return calculated;
+    }
+    return Number(selectedPromo.estimatedDiscount || 0);
+  }, [selectedPromo, totalAmount]);
+
+  const finalTotal = Math.max(0, totalAmount - discountAmount);
 
   const handleSelectAddress = (addr) => {
     setSelectedAddressId(addr.addressId);
@@ -322,30 +317,36 @@ export const CheckoutContainer = () => {
                 <h3>🎁 2. Mã Khuyến Mãi (Voucher)</h3>
               </div>
               <div className={styles.promosList}>
-                {promotions.map((promo) => {
-                  const isSelected = selectedPromo?.promotionCode === promo.promotionCode;
-                  const isEligible = promo.isEligible;
-                  return (
-                    <div
-                      key={promo.promotionCode}
-                      className={`${styles.promoCard} ${isSelected ? styles.promoSelected : ''} ${!isEligible ? styles.promoDisabled : ''}`}
-                      onClick={() => isEligible && setSelectedPromo(isSelected ? null : promo)}
-                    >
-                      <div className={styles.promoCodeBadge}>{promo.promotionCode}</div>
-                      <div className={styles.promoInfo}>
-                        <strong>{promo.promotionName}</strong>
-                        {promo.unmetReason && <span className={styles.unmet}>{promo.unmetReason}</span>}
-                      </div>
-                      <button
-                        type="button"
-                        className={styles.applyPromoBtn}
-                        disabled={!isEligible}
+                {promotions.length === 0 ? (
+                  <p style={{ padding: '16px', color: '#64748b', textAlign: 'center', margin: 0, width: '100%', fontStyle: 'italic' }}>
+                    Chưa có mã khuyến mãi khả dụng cho đơn hàng này.
+                  </p>
+                ) : (
+                  promotions.map((promo) => {
+                    const isSelected = selectedPromo?.promotionCode === promo.promotionCode;
+                    const isEligible = Boolean(promo.isEligible ?? promo.eligible);
+                    return (
+                      <div
+                        key={promo.promotionCode}
+                        className={`${styles.promoCard} ${isSelected ? styles.promoSelected : ''} ${!isEligible ? styles.promoDisabled : ''}`}
+                        onClick={() => isEligible && setSelectedPromo(isSelected ? null : promo)}
                       >
-                        {isSelected ? '✓ Bỏ chọn' : 'Áp dụng'}
-                      </button>
-                    </div>
-                  );
-                })}
+                        <div className={styles.promoCodeBadge}>{promo.promotionCode}</div>
+                        <div className={styles.promoInfo}>
+                          <strong>{promo.promotionName}</strong>
+                          {promo.unmetReason && <span className={styles.unmet}>{promo.unmetReason}</span>}
+                        </div>
+                        <button
+                          type="button"
+                          className={styles.applyPromoBtn}
+                          disabled={!isEligible}
+                        >
+                          {isSelected ? '✓ Bỏ chọn' : 'Áp dụng'}
+                        </button>
+                      </div>
+                    );
+                  })
+                )}
               </div>
             </div>
 
@@ -418,10 +419,6 @@ export const CheckoutContainer = () => {
                   <span>{formatVND(totalAmount)}</span>
                 </div>
 
-                <div className={styles.calcRow}>
-                  <span>Phí giao hàng:</span>
-                  <span>{shippingFee === 0 ? <strong className={styles.freeShip}>MIỄN PHÍ</strong> : formatVND(shippingFee)}</span>
-                </div>
 
                 {discountAmount > 0 && (
                   <div className={`${styles.calcRow} ${styles.discountRow}`}>
