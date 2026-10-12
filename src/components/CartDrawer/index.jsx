@@ -29,6 +29,11 @@ export const CartDrawer = () => {
     setShowClearConfirm(false);
   };
 
+  const handleShopNow = () => {
+    closeCart();
+    navigate(PATHS.HOME);
+  };
+
   return (
     <div className={styles.overlay} onClick={closeCart}>
       <aside className={styles.drawer} onClick={(e) => e.stopPropagation()}>
@@ -77,7 +82,7 @@ export const CartDrawer = () => {
               <div className={styles.emptyIcon}>🛒</div>
               <p className={styles.emptyTitle}>Giỏ hàng đang trống</p>
               <p className={styles.emptySubtitle}>Hãy chọn các loại rau củ, thịt cá tươi ngon vào giỏ nhé!</p>
-              <button type="button" className={styles.shopNowBtn} onClick={closeCart}>
+              <button type="button" className={styles.shopNowBtn} onClick={handleShopNow}>
                 Mua sắm ngay
               </button>
             </div>

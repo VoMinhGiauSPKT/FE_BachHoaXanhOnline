@@ -424,3 +424,321 @@
   align-items: center;
   gap: 14px;
 }
+
+.repayBtn {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: #ffffff;
+  padding: 6px 14px;
+  border-radius: $radius-md;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+  transition: all 0.2s ease;
+
+  &:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    transform: translateY(-1px);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+  }
+}
+
+.repayModalCard {
+  background: #ffffff;
+  width: 100%;
+  max-width: 500px;
+  border-radius: $radius-xl;
+  box-shadow: $shadow-lg;
+  overflow: hidden;
+  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.repayModalHeader {
+  padding: 18px 24px;
+  border-bottom: 1px solid $color-border;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  h3 {
+    font-size: 17px;
+    font-weight: 700;
+    color: $color-text-main;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button {
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #94a3b8;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    &:hover {
+      color: #0f172a;
+      background: #f1f5f9;
+    }
+  }
+}
+
+.repayModalBody {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.repayOrderSummaryBox {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: $radius-lg;
+  padding: 14px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  .orderInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    .code {
+      font-weight: 700;
+      color: #1e293b;
+      font-size: 15px;
+    }
+    .date {
+      font-size: 12px;
+      color: #64748b;
+    }
+  }
+
+  .orderAmount {
+    text-align: right;
+    .label {
+      font-size: 12px;
+      color: #64748b;
+    }
+    .amount {
+      font-size: 18px;
+      font-weight: 800;
+      color: #059669;
+    }
+  }
+}
+
+.paymentOptionsList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.paymentOptionCard {
+  border: 1.5px solid #e2e8f0;
+  border-radius: $radius-lg;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+
+  &:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+  }
+
+  &.selected {
+    border-color: #10b981;
+    background: #ecfdf5;
+  }
+
+  .radioDot {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+
+    .innerDot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #10b981;
+    }
+  }
+
+  &.selected .radioDot {
+    border-color: #10b981;
+  }
+
+  .icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    .title {
+      font-size: 14.5px;
+      font-weight: 700;
+      color: #0f172a;
+    }
+    .desc {
+      font-size: 12.5px;
+      color: #64748b;
+    }
+  }
+}
+
+.repayModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 10px;
+
+  .cancelModalBtn {
+    padding: 10px 18px;
+    background: #f1f5f9;
+    border: none;
+    border-radius: $radius-md;
+    font-size: 14px;
+    font-weight: 600;
+    color: #475569;
+    cursor: pointer;
+    &:hover {
+      background: #e2e8f0;
+    }
+  }
+
+  .submitRepayBtn {
+    padding: 10px 22px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border: none;
+    border-radius: $radius-md;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ffffff;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    &:hover {
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+    }
+    &:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+  }
+}
+
+/* Pagination Bar */
+.paginationBar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-top: 1px solid $color-border;
+  flex-wrap: wrap;
+  gap: 12px;
+
+  .paginationInfo {
+    font-size: 13.5px;
+    color: $color-text-secondary;
+    strong {
+      color: $color-text-main;
+      font-weight: 700;
+    }
+  }
+
+  .paginationControls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .pageBtn {
+    padding: 6px 14px;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 600;
+    color: $color-text-main;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover:not(:disabled) {
+      border-color: $color-primary;
+      color: $color-primary-dark;
+      background: $color-primary-light;
+    }
+
+    &:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+  }
+
+  .pageNumbers {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .numberBtn {
+    min-width: 34px;
+    height: 34px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid $color-border;
+    border-radius: $radius-md;
+    background: #ffffff;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: $color-text-main;
+    cursor: pointer;
+    transition: all 0.15s ease;
+
+    &:hover:not(.activePage) {
+      border-color: $color-primary;
+      color: $color-primary-dark;
+    }
+
+    &.activePage {
+      background: $color-primary;
+      border-color: $color-primary;
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: $shadow-xs;
+    }
+  }
+
+  .pageDots {
+    padding: 0 4px;
+    color: $color-text-muted;
+    font-size: 13px;
+  }
+}
+

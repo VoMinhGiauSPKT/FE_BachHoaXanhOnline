@@ -6,6 +6,7 @@ import AdminLayout from '../../layout/common/AdminLayout';
 import DesktopAdmin from '../../layout/desktop/admin';
 import productService from '../../../services/productService';
 import categoryService from '../../../services/categoryService';
+import supplierService from '../../../services/supplierService';
 import orderService from '../../../services/orderService';
 import promotionService from '../../../services/promotionService';
 import employeeService from '../../../services/employeeService';
@@ -24,6 +25,7 @@ export const AdminContainer = () => {
   const getTabFromPath = useCallback(() => {
     const path = location.pathname;
     if (path.includes('/admin/categories')) return 'categories';
+    if (path.includes('/admin/suppliers')) return 'suppliers';
     if (path.includes('/admin/orders')) return 'orders';
     if (path.includes('/admin/promotions')) return 'promotions';
     if (path.includes('/admin/employees')) return 'employees';
@@ -42,6 +44,7 @@ export const AdminContainer = () => {
     const pathMap = {
       products: PATHS.ADMIN.PRODUCTS,
       categories: PATHS.ADMIN.CATEGORIES,
+      suppliers: PATHS.ADMIN.SUPPLIERS,
       orders: PATHS.ADMIN.ORDERS,
       promotions: PATHS.ADMIN.PROMOTIONS,
       employees: PATHS.ADMIN.EMPLOYEES,
@@ -64,16 +67,22 @@ export const AdminContainer = () => {
   const [productTotal, setProductTotal] = useState(0);
   const [isProductsLoading, setIsProductsLoading] = useState(false);
 
-  const loadProducts = useCallback(async () => {
+  const loadProducts = useCallback(async (overrides = {}) => {
     setIsProductsLoading(true);
     try {
+      const page = overrides.page !== undefined ? overrides.page : productPage;
+      const limit = overrides.limit !== undefined ? overrides.limit : productLimit;
+      const kw = overrides.search !== undefined ? overrides.search : productSearch;
+      const cat = overrides.categoryFilter !== undefined ? overrides.categoryFilter : productCategoryFilter;
+      const stock = overrides.inStockFilter !== undefined ? overrides.inStockFilter : productInStockFilter;
+
       const params = {
-        page: productPage,
-        limit: productLimit
+        page,
+        limit
       };
-      if (productSearch.trim()) params.keyword = productSearch.trim();
-      if (productCategoryFilter) params.categoryId = productCategoryFilter;
-      if (productInStockFilter !== '') params.inStock = productInStockFilter === 'true';
+      if (kw.trim()) params.keyword = kw.trim();
+      if (cat) params.categoryId = cat;
+      if (stock !== '') params.inStock = stock === 'true';
 
       const res = await productService.getProducts(params);
       if (res.data?.products) {
@@ -92,23 +101,21 @@ export const AdminContainer = () => {
     }
   }, [productPage, productLimit, productSearch, productCategoryFilter, productInStockFilter]);
 
-  // Debounced load for product search / filter
-  const isInitialProductMount = useRef(true);
-  useEffect(() => {
-    if (activeTab !== 'products') return;
+  const handleProductSearchSubmit = ({ search, categoryFilter, inStockFilter }) => {
+    setProductSearch(search || '');
+    setProductCategoryFilter(categoryFilter || '');
+    setProductInStockFilter(inStockFilter !== undefined ? inStockFilter : '');
+    setProductPage(1);
+    loadProducts({ search: search || '', categoryFilter: categoryFilter || '', inStockFilter: inStockFilter !== undefined ? inStockFilter : '', page: 1 });
+  };
 
-    if (isInitialProductMount.current) {
-      isInitialProductMount.current = false;
-      loadProducts();
-      return;
-    }
-
-    const timer = setTimeout(() => {
-      loadProducts();
-    }, 350);
-
-    return () => clearTimeout(timer);
-  }, [activeTab, loadProducts]);
+  const handleProductResetFilters = () => {
+    setProductSearch('');
+    setProductCategoryFilter('');
+    setProductInStockFilter('');
+    setProductPage(1);
+    loadProducts({ search: '', categoryFilter: '', inStockFilter: '', page: 1 });
+  };
 
   const handleProductPageChange = (newPage, newLimit) => {
     setProductPage(newPage);
@@ -128,7 +135,10 @@ export const AdminContainer = () => {
           supplierId: productData.supplierId || 'NCC02',
           unit: (productData.unit || 'KG').trim().toUpperCase(),
           expiryDate: productData.expiryDate || null,
-          quantity: productData.stock !== undefined ? Number(productData.stock) : undefined
+          quantity: productData.stock !== undefined ? Number(productData.stock) : undefined,
+          importPrice: productData.importPrice !== undefined ? Number(productData.importPrice) : undefined,
+          sellingPrice: Number(productData.sellingPrice || productData.price || 0),
+          vat: productData.vat !== undefined ? Number(productData.vat) : undefined
         };
         await productService.updateProduct(editId, updatePayload);
         addToast({ type: 'success', message: `Cập nhật sản phẩm "${productData.productName}" thành công!` });
@@ -227,6 +237,63 @@ export const AdminContainer = () => {
   };
 
   // ==========================================
+  // 2.5 SUPPLIERS STATE
+  // ==========================================
+  const [suppliers, setSuppliers] = useState([]);
+  const [isSupplierLoading, setIsSupplierLoading] = useState(false);
+
+  const loadSuppliers = useCallback(async () => {
+    setIsSupplierLoading(true);
+    try {
+      const res = await supplierService.getSuppliers({ activeOnly: false });
+      const supList = Array.isArray(res.data)
+        ? res.data
+        : (res.data?.suppliers || res.data?.items || (Array.isArray(res) ? res : []));
+      setSuppliers(supList);
+    } catch (err) {
+      console.warn('Lỗi tải nhà cung cấp:', err);
+      setSuppliers([]);
+    } finally {
+      setIsSupplierLoading(false);
+    }
+  }, []);
+
+  const handleSaveSupplier = async (data, editId) => {
+    try {
+      if (editId) {
+        await supplierService.updateSupplier(editId, data);
+        addToast({ type: 'success', message: `Cập nhật nhà cung cấp "${data.supplierName || editId}" thành công!` });
+      } else {
+        await supplierService.createSupplier(data);
+        addToast({ type: 'success', message: `Tạo nhà cung cấp "${data.supplierName}" thành công!` });
+      }
+      loadSuppliers();
+      return { success: true };
+    } catch (err) {
+      const errorMsg = err?.data?.message || err?.response?.data?.message || err?.message || 'Lỗi lưu nhà cung cấp!';
+      addToast({ type: 'error', message: errorMsg });
+      return { success: false, error: errorMsg };
+    }
+  };
+
+  const handleDeleteSupplier = async (id, name) => {
+    if (!isAdmin) {
+      addToast({ type: 'error', message: 'Chỉ Admin mới có quyền xóa nhà cung cấp!' });
+      return;
+    }
+    try {
+      await supplierService.deleteSupplier(id);
+      addToast({ type: 'success', message: `Đã xóa nhà cung cấp "${name || id}"!` });
+      loadSuppliers();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err?.data?.message || err?.response?.data?.message || err?.message || `Lỗi xóa nhà cung cấp ${id}!`
+      });
+    }
+  };
+
+  // ==========================================
   // 3. ORDERS STATE & PAGINATION
   // ==========================================
   const [orders, setOrders] = useState([]);
@@ -282,6 +349,22 @@ export const AdminContainer = () => {
     }
   };
 
+  const handleCancelOrder = async (orderId) => {
+    try {
+      await orderService.cancelOrder(orderId);
+      addToast({
+        type: 'success',
+        message: `Đã hủy hóa đơn ${orderId} và hoàn trả số lượng sản phẩm vào kho thành công!`
+      });
+      loadOrders();
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err?.response?.data?.message || 'Lỗi hủy hóa đơn!'
+      });
+    }
+  };
+
   const handleViewOrderDetail = async (orderId) => {
     try {
       const res = await orderService.getOrderById(orderId);
@@ -307,16 +390,21 @@ export const AdminContainer = () => {
   const [promoTotal, setPromoTotal] = useState(0);
   const [isPromoLoading, setIsPromoLoading] = useState(false);
 
-  const loadPromotions = useCallback(async () => {
+  const loadPromotions = useCallback(async (overrides = {}) => {
     if (!isAdmin) return;
     setIsPromoLoading(true);
     try {
+      const page = overrides.page !== undefined ? overrides.page : promoPage;
+      const limit = overrides.limit !== undefined ? overrides.limit : promoLimit;
+      const kw = overrides.keyword !== undefined ? overrides.keyword : promoKeyword;
+      const type = overrides.type !== undefined ? overrides.type : promoTypeFilter;
+
       const params = {
-        page: promoPage,
-        limit: promoLimit
+        page,
+        limit
       };
-      if (promoKeyword.trim()) params.keyword = promoKeyword.trim();
-      if (promoTypeFilter) params.type = promoTypeFilter;
+      if (kw.trim()) params.keyword = kw.trim();
+      if (type) params.type = type;
 
       const res = await promotionService.getPromotions(params);
       if (res.data?.promotions) {
@@ -334,6 +422,20 @@ export const AdminContainer = () => {
       setIsPromoLoading(false);
     }
   }, [isAdmin, promoPage, promoLimit, promoKeyword, promoTypeFilter]);
+
+  const handlePromoSearchSubmit = ({ keyword, discountTypeFilter }) => {
+    setPromoKeyword(keyword || '');
+    setPromoTypeFilter(discountTypeFilter || '');
+    setPromoPage(1);
+    loadPromotions({ keyword: keyword || '', type: discountTypeFilter || '', page: 1 });
+  };
+
+  const handlePromoResetFilters = () => {
+    setPromoKeyword('');
+    setPromoTypeFilter('');
+    setPromoPage(1);
+    loadPromotions({ keyword: '', type: '', page: 1 });
+  };
 
   const handlePromoPageChange = (newPage, newLimit) => {
     setPromoPage(newPage);
@@ -395,17 +497,23 @@ export const AdminContainer = () => {
   const [empTotal, setEmpTotal] = useState(0);
   const [isEmpLoading, setIsEmpLoading] = useState(false);
 
-  const loadEmployees = useCallback(async () => {
+  const loadEmployees = useCallback(async (overrides = {}) => {
     if (!isAdmin) return;
     setIsEmpLoading(true);
     try {
+      const page = overrides.page !== undefined ? overrides.page : empPage;
+      const limit = overrides.limit !== undefined ? overrides.limit : empLimit;
+      const kw = overrides.search !== undefined ? overrides.search : empSearch;
+      const pos = overrides.position !== undefined ? overrides.position : empPositionFilter;
+      const st = overrides.status !== undefined ? overrides.status : empStatusFilter;
+
       const params = {
-        page: empPage,
-        limit: empLimit
+        page,
+        limit
       };
-      if (empSearch.trim()) params.keyword = empSearch.trim();
-      if (empPositionFilter) params.position = empPositionFilter;
-      if (empStatusFilter !== '') params.status = empStatusFilter === 'true';
+      if (kw.trim()) params.keyword = kw.trim();
+      if (pos) params.position = pos;
+      if (st !== '') params.status = st === 'true';
 
       const res = await employeeService.getEmployees(params);
       if (res.data?.employees) {
@@ -423,6 +531,22 @@ export const AdminContainer = () => {
       setIsEmpLoading(false);
     }
   }, [isAdmin, empPage, empLimit, empSearch, empPositionFilter, empStatusFilter]);
+
+  const handleEmpSearchSubmit = ({ search, positionFilter, statusFilter }) => {
+    setEmpSearch(search || '');
+    setEmpPositionFilter(positionFilter || '');
+    setEmpStatusFilter(statusFilter !== undefined ? statusFilter : '');
+    setEmpPage(1);
+    loadEmployees({ search: search || '', position: positionFilter || '', status: statusFilter !== undefined ? statusFilter : '', page: 1 });
+  };
+
+  const handleEmpResetFilters = () => {
+    setEmpSearch('');
+    setEmpPositionFilter('');
+    setEmpStatusFilter('');
+    setEmpPage(1);
+    loadEmployees({ search: '', position: '', status: '', page: 1 });
+  };
 
   const handleEmpPageChange = (newPage, newLimit) => {
     setEmpPage(newPage);
@@ -486,16 +610,22 @@ export const AdminContainer = () => {
   const [reviewTotal, setReviewTotal] = useState(0);
   const [isReviewsLoading, setIsReviewsLoading] = useState(false);
 
-  const loadReviews = useCallback(async () => {
+  const loadReviews = useCallback(async (overrides = {}) => {
     setIsReviewsLoading(true);
     try {
+      const page = overrides.page !== undefined ? overrides.page : reviewPage;
+      const limit = overrides.limit !== undefined ? overrides.limit : reviewLimit;
+      const kw = overrides.keyword !== undefined ? overrides.keyword : reviewKeyword;
+      const rating = overrides.rating !== undefined ? overrides.rating : reviewRatingFilter;
+      const isDel = overrides.isDeleted !== undefined ? overrides.isDeleted : reviewStatusFilter;
+
       const params = {
-        page: reviewPage,
-        limit: reviewLimit
+        page,
+        limit
       };
-      if (reviewKeyword.trim()) params.keyword = reviewKeyword.trim();
-      if (reviewRatingFilter) params.rating = Number(reviewRatingFilter);
-      if (reviewStatusFilter !== '') params.isDeleted = reviewStatusFilter === 'true';
+      if (kw.trim()) params.keyword = kw.trim();
+      if (rating) params.rating = Number(rating);
+      if (isDel !== '') params.isDeleted = isDel === 'true';
 
       const res = await reviewService.getAllReviewsForModeration(params);
       if (res.data?.reviews) {
@@ -513,6 +643,22 @@ export const AdminContainer = () => {
       setIsReviewsLoading(false);
     }
   }, [reviewPage, reviewLimit, reviewKeyword, reviewRatingFilter, reviewStatusFilter]);
+
+  const handleReviewSearchSubmit = ({ keyword, ratingFilter, statusFilter }) => {
+    setReviewKeyword(keyword || '');
+    setReviewRatingFilter(ratingFilter || '');
+    setReviewStatusFilter(statusFilter !== undefined ? statusFilter : '');
+    setReviewPage(1);
+    loadReviews({ keyword: keyword || '', rating: ratingFilter || '', isDeleted: statusFilter !== undefined ? statusFilter : '', page: 1 });
+  };
+
+  const handleReviewResetFilters = () => {
+    setReviewKeyword('');
+    setReviewRatingFilter('');
+    setReviewStatusFilter('');
+    setReviewPage(1);
+    loadReviews({ keyword: '', rating: '', isDeleted: '', page: 1 });
+  };
 
   const handleReviewPageChange = (newPage, newLimit) => {
     setReviewPage(newPage);
@@ -551,8 +697,11 @@ export const AdminContainer = () => {
   // Đồng bộ nạp dữ liệu khi đổi tab
   useEffect(() => {
     loadCategories(); // Luôn nạp danh mục phục vụ chọn ngành hàng ở các tab
+    loadSuppliers();  // Luôn nạp nhà cung cấp phục vụ chọn ở form sản phẩm
     if (activeTab === 'products') {
       loadProducts();
+    } else if (activeTab === 'suppliers') {
+      loadSuppliers();
     } else if (activeTab === 'orders') {
       loadOrders();
     } else if (activeTab === 'promotions' && isAdmin) {
@@ -562,7 +711,7 @@ export const AdminContainer = () => {
     } else if (activeTab === 'reviews') {
       loadReviews();
     }
-  }, [activeTab, isAdmin, loadProducts, loadCategories, loadOrders, loadPromotions, loadEmployees, loadReviews]);
+  }, [activeTab, isAdmin, loadProducts, loadCategories, loadSuppliers, loadOrders, loadPromotions, loadEmployees, loadReviews]);
 
   return (
     <AdminLayout activeTab={activeTab} onTabChange={handleTabChange}>
@@ -579,6 +728,8 @@ export const AdminContainer = () => {
         productCategoryFilter={productCategoryFilter}
         productInStockFilter={productInStockFilter}
         isProductsLoading={isProductsLoading}
+        onProductSearchSubmit={handleProductSearchSubmit}
+        onProductResetFilters={handleProductResetFilters}
         onProductSearchChange={(val) => { setProductSearch(val); setProductPage(1); }}
         onProductCategoryFilterChange={(val) => { setProductCategoryFilter(val); setProductPage(1); }}
         onProductInStockFilterChange={(val) => { setProductInStockFilter(val); setProductPage(1); }}
@@ -592,6 +743,12 @@ export const AdminContainer = () => {
         onSaveCategory={handleSaveCategory}
         onDeleteCategory={handleDeleteCategory}
         onRefreshCategories={loadCategories}
+        // Suppliers
+        suppliers={suppliers}
+        isSupplierLoading={isSupplierLoading}
+        onSaveSupplier={handleSaveSupplier}
+        onDeleteSupplier={handleDeleteSupplier}
+        onRefreshSuppliers={loadSuppliers}
         // Orders
         orders={orders}
         orderPage={orderPage}
@@ -603,6 +760,7 @@ export const AdminContainer = () => {
         onViewOrderDetail={handleViewOrderDetail}
         onCloseOrderDetail={() => setSelectedAdminOrder(null)}
         onConfirmCod={handleConfirmCod}
+        onCancelOrder={handleCancelOrder}
         onRefreshOrders={loadOrders}
         // Promotions
         promotions={promotions}
@@ -612,6 +770,8 @@ export const AdminContainer = () => {
         promoKeyword={promoKeyword}
         promoTypeFilter={promoTypeFilter}
         isPromoLoading={isPromoLoading}
+        onPromoSearchSubmit={handlePromoSearchSubmit}
+        onPromoResetFilters={handlePromoResetFilters}
         onPromoKeywordChange={(val) => { setPromoKeyword(val); setPromoPage(1); }}
         onPromoTypeFilterChange={(val) => { setPromoTypeFilter(val); setPromoPage(1); }}
         onPromoPageChange={handlePromoPageChange}
@@ -628,6 +788,8 @@ export const AdminContainer = () => {
         empPositionFilter={empPositionFilter}
         empStatusFilter={empStatusFilter}
         isEmpLoading={isEmpLoading}
+        onEmpSearchSubmit={handleEmpSearchSubmit}
+        onEmpResetFilters={handleEmpResetFilters}
         onEmpSearchChange={(val) => { setEmpSearch(val); setEmpPage(1); }}
         onEmpPositionFilterChange={(val) => { setEmpPositionFilter(val); setEmpPage(1); }}
         onEmpStatusFilterChange={(val) => { setEmpStatusFilter(val); setEmpPage(1); }}
@@ -645,6 +807,8 @@ export const AdminContainer = () => {
         reviewRatingFilter={reviewRatingFilter}
         reviewStatusFilter={reviewStatusFilter}
         isReviewsLoading={isReviewsLoading}
+        onReviewSearchSubmit={handleReviewSearchSubmit}
+        onReviewResetFilters={handleReviewResetFilters}
         onReviewKeywordChange={(val) => { setReviewKeyword(val); setReviewPage(1); }}
         onReviewRatingFilterChange={(val) => { setReviewRatingFilter(val); setReviewPage(1); }}
         onReviewStatusFilterChange={(val) => { setReviewStatusFilter(val); setReviewPage(1); }}

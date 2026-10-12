@@ -1,10 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import DefaultLayout from '../../layout/common/DefaultLayout';
 import orderService from '../../../services/orderService';
 import reviewService from '../../../services/reviewService';
 import useAuthStore from '../../../stores/useAuthStore';
 import useToastStore from '../../../stores/useToastStore';
+import VietQRModal from '../../../components/VietQRModal';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
 import { formatPaymentMethod } from '../../../utils/formatPayment';
@@ -41,11 +42,18 @@ export const OrdersContainer = () => {
   const [orders, setOrders] = useState([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [totalOrders, setTotalOrders] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
   // Modal chi tiết đơn hàng
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isDetailLoading, setIsDetailLoading] = useState(false);
+
+  // Modal Thanh toán lại
+  const [repayOrder, setRepayOrder] = useState(null);
+  const [repayMethod, setRepayMethod] = useState('VIETQR');
+  const [isRepaying, setIsRepaying] = useState(false);
+  const [vietQrPaymentData, setVietQrPaymentData] = useState(null);
 
   // Modal đánh giá sản phẩm (dành cho đơn hàng DATHANHTOAN)
   const [reviewModalItem, setReviewModalItem] = useState(null);
@@ -53,30 +61,103 @@ export const OrdersContainer = () => {
   const [reviewComment, setReviewComment] = useState('');
   const [isReviewSubmitting, setIsReviewSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!isAuthenticated) return;
-
-    const fetchOrders = async () => {
-      setIsLoading(true);
-      try {
-        const res = await orderService.getOrders({ page: currentPage, limit: 10 });
-        if (res.data && res.data.items) {
-          setOrders(res.data.items);
-          setTotalPages(res.data.totalPages || 1);
-        } else {
-          setOrders([]);
-          setTotalPages(1);
-        }
-      } catch (err) {
+  const fetchOrders = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await orderService.getOrders({ page: currentPage, limit: 10 });
+      if (res.data && res.data.items) {
+        setOrders(res.data.items);
+        setTotalPages(res.data.totalPages || 1);
+        setTotalOrders(res.data.total ?? res.data.items.length ?? 0);
+      } else {
         setOrders([]);
         setTotalPages(1);
-      } finally {
-        setIsLoading(false);
+        setTotalOrders(0);
       }
-    };
+    } catch (err) {
+      setOrders([]);
+      setTotalPages(1);
+      setTotalOrders(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage]);
 
-    fetchOrders();
-  }, [isAuthenticated, currentPage]);
+  const getPageNumbers = () => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    }
+    const pages = [];
+    pages.push(1);
+    if (currentPage > 3) pages.push('...');
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (currentPage < totalPages - 2) pages.push('...');
+    pages.push(totalPages);
+    return pages;
+  };
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, fetchOrders]);
+
+  const handleOpenRepayModal = (order) => {
+    setRepayOrder(order);
+    const initialMethod = order.phuongThucTT === 'COD' ? 'COD' : 'VIETQR';
+    setRepayMethod(initialMethod);
+  };
+
+  const handleConfirmRepay = async () => {
+    if (!repayOrder) return;
+    setIsRepaying(true);
+    try {
+      if (repayMethod === 'COD') {
+        await orderService.changePaymentMethod(repayOrder.maDonHang, 'COD');
+        addToast({
+          type: 'success',
+          message: '🎉 Đã chuyển sang thanh toán khi nhận hàng (COD)! Đơn hàng đang được chuẩn bị.'
+        });
+        setRepayOrder(null);
+        await fetchOrders();
+      } else {
+        // Cập nhật phương thức thành VIETQR nếu cần
+        await orderService.changePaymentMethod(repayOrder.maDonHang, 'VIETQR');
+        // Tạo link giao dịch PayOS
+        const payRes = await orderService.createPayment(repayOrder.maDonHang);
+        const data = payRes?.data;
+        if (data) {
+          setVietQrPaymentData({
+            ...data,
+            orderId: repayOrder.maDonHang
+          });
+          setRepayOrder(null);
+        } else {
+          throw new Error('Không thể khởi tạo mã VietQR từ hệ thống.');
+        }
+      }
+    } catch (err) {
+      addToast({
+        type: 'error',
+        message: err?.response?.data?.message || err.message || 'Không thể thực hiện thanh toán lại. Vui lòng thử lại!'
+      });
+    } finally {
+      setIsRepaying(false);
+    }
+  };
+
+  const handleVietQrSuccess = async () => {
+    setVietQrPaymentData(null);
+    addToast({
+      type: 'success',
+      message: '🎉 Thanh toán đơn hàng thành công!'
+    });
+    await fetchOrders();
+  };
 
   const handleViewDetail = async (orderId) => {
     setIsDetailLoading(true);
@@ -145,8 +226,10 @@ export const OrdersContainer = () => {
       case 'SHIPPING':
       case 'PROCESSING':
         return <span className={`${styles.statusBadge} ${styles.shipping}`}>Đang Giao Hàng</span>;
+      case ORDER_STATUS.DAHUY:
+      case 'DAHUY':
       case 'CANCELLED':
-        return <span className={`${styles.statusBadge} ${styles.cancelled}`}>Đã Hủy</span>;
+        return <span className={`${styles.statusBadge} ${styles.cancelled}`}>{ORDER_STATUS_LABELS.DAHUY || 'Đã Hủy'}</span>;
       default:
         return <span className={styles.statusBadge}>{ORDER_STATUS_LABELS[status] || status}</span>;
     }
@@ -209,18 +292,78 @@ export const OrdersContainer = () => {
                     <td>{formatPaymentMethod(o.phuongThucTT)}</td>
                     <td>{getStatusBadge(o.trangThai)}</td>
                     <td>
-                      <button
-                        type="button"
-                        className={styles.viewBtn}
-                        onClick={() => handleViewDetail(o.maDonHang)}
-                      >
-                        Chi tiết
-                      </button>
+                      <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                        <button
+                          type="button"
+                          className={styles.viewBtn}
+                          onClick={() => handleViewDetail(o.maDonHang)}
+                        >
+                          Chi tiết
+                        </button>
+                        {(o.trangThai === ORDER_STATUS.CHUATHANHTOAN || o.trangThai === 'PENDING') && (
+                          <button
+                            type="button"
+                            className={styles.repayBtn}
+                            onClick={() => handleOpenRepayModal(o)}
+                          >
+                            💳 Thanh toán lại
+                          </button>
+                        )}
+                      </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+
+            {/* Thanh điều hướng phân trang (10 hóa đơn / trang) */}
+            {totalPages > 1 && (
+              <div className={styles.paginationBar}>
+                <div className={styles.paginationInfo}>
+                  Hiển thị <strong>{(currentPage - 1) * 10 + 1}</strong> -{' '}
+                  <strong>{Math.min(currentPage * 10, totalOrders)}</strong> trong tổng số{' '}
+                  <strong>{totalOrders}</strong> hóa đơn
+                </div>
+                <div className={styles.paginationControls}>
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    disabled={currentPage <= 1}
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                  >
+                    ← Trước
+                  </button>
+
+                  <div className={styles.pageNumbers}>
+                    {getPageNumbers().map((p, idx) =>
+                      p === '...' ? (
+                        <span key={`dots-${idx}`} className={styles.pageDots}>
+                          ...
+                        </span>
+                      ) : (
+                        <button
+                          key={p}
+                          type="button"
+                          className={`${styles.numberBtn} ${p === currentPage ? styles.activePage : ''}`}
+                          onClick={() => setCurrentPage(p)}
+                        >
+                          {p}
+                        </button>
+                      )
+                    )}
+                  </div>
+
+                  <button
+                    type="button"
+                    className={styles.pageBtn}
+                    disabled={currentPage >= totalPages}
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Sau →
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         )}
 
@@ -309,6 +452,31 @@ export const OrdersContainer = () => {
                     {formatVND(selectedOrder.tongTienSauGiamGia || selectedOrder.tongTien)}
                   </strong>
                 </div>
+
+                {/* Nút thanh toán lại trong modal nếu đơn chưa thanh toán */}
+                {(selectedOrder.trangThai === ORDER_STATUS.CHUATHANHTOAN || selectedOrder.trangThai === 'PENDING') && (
+                  <div style={{ marginTop: 20, textAlign: 'right' }}>
+                    <button
+                      type="button"
+                      className={styles.repayBtn}
+                      style={{ padding: '10px 22px', fontSize: '14px' }}
+                      onClick={() => {
+                        const ord = selectedOrder;
+                        setSelectedOrder(null);
+                        handleOpenRepayModal(ord);
+                      }}
+                    >
+                      💳 Thanh toán lại đơn hàng này
+                    </button>
+                  </div>
+                )}
+
+                {/* Thông báo nếu đơn đã bị hủy */}
+                {(selectedOrder.trangThai === ORDER_STATUS.DAHUY || selectedOrder.trangThai === 'DAHUY' || selectedOrder.trangThai === 'CANCELLED') && (
+                  <div style={{ marginTop: 16, padding: '12px 16px', background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '8px', color: '#b91c1c', fontSize: '13.5px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>⚠️ Đơn hàng này đã bị hủy và không thể thanh toán được nữa.</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -374,6 +542,101 @@ export const OrdersContainer = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Modal Chọn phương thức thanh toán lại */}
+        {repayOrder && (
+          <div className={styles.modalOverlay} onClick={() => !isRepaying && setRepayOrder(null)}>
+            <div className={styles.repayModalCard} onClick={(e) => e.stopPropagation()}>
+              <div className={styles.repayModalHeader}>
+                <h3>💳 Thanh Toán Lại Đơn Hàng #{repayOrder.maDonHang}</h3>
+                <button type="button" disabled={isRepaying} onClick={() => setRepayOrder(null)}>✕</button>
+              </div>
+
+              <div className={styles.repayModalBody}>
+                <div className={styles.repayOrderSummaryBox}>
+                  <div className={styles.orderInfo}>
+                    <span className={styles.code}>Đơn hàng: #{repayOrder.maDonHang}</span>
+                    <span className={styles.date}>{formatDate(repayOrder.ngayLap, true)}</span>
+                  </div>
+                  <div className={styles.orderAmount}>
+                    <div className={styles.label}>Số tiền thanh toán:</div>
+                    <div className={styles.amount}>
+                      {formatVND(repayOrder.tongTienSauGiamGia || repayOrder.tongTien)}
+                    </div>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 style={{ margin: '0 0 10px', fontSize: '14px', color: '#1e293b' }}>
+                    Chọn phương thức thanh toán mới:
+                  </h4>
+                  <div className={styles.paymentOptionsList}>
+                    {/* Option Dynamic VietQR */}
+                    <div
+                      className={`${styles.paymentOptionCard} ${repayMethod === 'VIETQR' ? styles.selected : ''}`}
+                      onClick={() => setRepayMethod('VIETQR')}
+                    >
+                      <div className={styles.radioDot}>
+                        {repayMethod === 'VIETQR' && <div className={styles.innerDot} />}
+                      </div>
+                      <span className={styles.icon}>📱</span>
+                      <div className={styles.details}>
+                        <span className={styles.title}>Quét mã Dynamic VietQR (PayOS)</span>
+                        <span className={styles.desc}>Chuyển khoản 24/7 qua App ngân hàng hoặc ví điện tử</span>
+                      </div>
+                    </div>
+
+                    {/* Option COD */}
+                    <div
+                      className={`${styles.paymentOptionCard} ${repayMethod === 'COD' ? styles.selected : ''}`}
+                      onClick={() => setRepayMethod('COD')}
+                    >
+                      <div className={styles.radioDot}>
+                        {repayMethod === 'COD' && <div className={styles.innerDot} />}
+                      </div>
+                      <span className={styles.icon}>💵</span>
+                      <div className={styles.details}>
+                        <span className={styles.title}>Thanh toán tiền mặt khi nhận hàng (COD)</span>
+                        <span className={styles.desc}>Nhân viên FreshMart giao tận nơi và thu tiền</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className={styles.repayModalActions}>
+                  <button
+                    type="button"
+                    className={styles.cancelModalBtn}
+                    disabled={isRepaying}
+                    onClick={() => setRepayOrder(null)}
+                  >
+                    Đóng
+                  </button>
+                  <button
+                    type="button"
+                    className={styles.submitRepayBtn}
+                    disabled={isRepaying}
+                    onClick={handleConfirmRepay}
+                  >
+                    {isRepaying ? 'Đang xử lý...' : repayMethod === 'VIETQR' ? 'Tiếp tục quét mã VietQR' : 'Xác nhận chuyển sang COD'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Dynamic VietQR Modal */}
+        {vietQrPaymentData && (
+          <VietQRModal
+            paymentData={vietQrPaymentData}
+            onPaymentSuccess={handleVietQrSuccess}
+            onClose={() => {
+              setVietQrPaymentData(null);
+              fetchOrders();
+            }}
+          />
         )}
       </div>
     </DefaultLayout>

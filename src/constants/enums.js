@@ -24,14 +24,17 @@ export const POSITION_LABELS = {
 export const ORDER_STATUS = {
   CHUATHANHTOAN: 'CHUATHANHTOAN', // Chưa thanh toán (mới đặt, COD hoặc chờ quét QR)
   DATHANHTOAN: 'DATHANHTOAN',     // Đã thanh toán (xác nhận COD hoặc PayOS thành công)
+  DAHUY: 'DAHUY',                 // Đã hủy (bị nhân viên/admin hủy)
   // Alias tương thích dữ liệu cũ
   PENDING: 'CHUATHANHTOAN',
-  COMPLETED: 'DATHANHTOAN'
+  COMPLETED: 'DATHANHTOAN',
+  CANCELLED: 'DAHUY'
 };
 
 export const ORDER_STATUS_LABELS = {
   CHUATHANHTOAN: 'Chưa Thanh Toán',
   DATHANHTOAN: 'Đã Thanh Toán',
+  DAHUY: 'Đã Hủy',
   PENDING: 'Chưa Thanh Toán',
   COMPLETED: 'Đã Thanh Toán',
   CANCELLED: 'Đã Hủy'

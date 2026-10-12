@@ -24,10 +24,6 @@ export const ProductCard = ({
   const rating = product.ratingAverage || product.rating || 5.0;
   const reviewCount = product.totalReviews || 0;
 
-  // Mock specs and discount for rich visual fidelity if not returned by backend
-  const discountPercent = product.discountPercent || (parseInt(productId?.slice(-2) || '10', 10) % 2 === 0 ? 15 : 0);
-  const originalPrice = discountPercent > 0 ? Math.round(price / (1 - discountPercent / 100)) : null;
-  const isBestSeller = product.isBestSeller ?? (discountPercent > 0);
   const specs = product.specs || `Tươi mới mỗi ngày • Bảo quản 4-8°C`;
 
   const handleAddClick = async (e) => {
@@ -44,15 +40,6 @@ export const ProductCard = ({
 
   return (
     <article className={`${styles.card} ${styles[variant]}`}>
-      {/* Badges bar */}
-      <div className={styles.badgesRow}>
-        {discountPercent > 0 && (
-          <span className={styles.discountBadge}>-{discountPercent}%</span>
-        )}
-        {isBestSeller && (
-          <span className={styles.bestSellerBadge}>BEST SELLER</span>
-        )}
-      </div>
 
       {/* Product Image Link */}
       <Link to={`/product/${productId}`} className={styles.imageWrap}>
@@ -89,9 +76,6 @@ export const ProductCard = ({
               <span className={styles.amount}>{formatVND(price)}</span>
               <span className={styles.unitText}>/ {displayUnit}</span>
             </div>
-            {originalPrice && (
-              <span className={styles.originalPrice}>{formatVND(originalPrice)}</span>
-            )}
           </div>
 
           <button

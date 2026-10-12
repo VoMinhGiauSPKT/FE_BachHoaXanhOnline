@@ -13,7 +13,8 @@ import {
   Select,
   Form,
   InputNumber,
-  DatePicker
+  DatePicker,
+  Spin
 } from 'antd';
 import {
   PlusOutlined,
@@ -25,6 +26,7 @@ import {
 import dayjs from 'dayjs';
 import { formatVND } from '../../../../../utils/formatCurrency';
 import { formatDate } from '../../../../../utils/formatDate';
+import promotionService from '../../../../../services/promotionService';
 
 const { Text } = Typography;
 const { RangePicker } = DatePicker;
@@ -37,6 +39,8 @@ export const PromotionManager = ({
   total = 0,
   keyword = '',
   discountTypeFilter = '',
+  onSearchSubmit,
+  onResetFilters,
   onKeywordChange,
   onDiscountTypeFilterChange,
   onPageChange,
@@ -45,9 +49,43 @@ export const PromotionManager = ({
   onDeletePromotion,
   onRefresh
 }) => {
+  const [tempKeyword, setTempKeyword] = useState(keyword);
+  const [tempDiscountType, setTempDiscountType] = useState(discountTypeFilter);
+
+  React.useEffect(() => {
+    setTempKeyword(keyword);
+  }, [keyword]);
+  React.useEffect(() => {
+    setTempDiscountType(discountTypeFilter);
+  }, [discountTypeFilter]);
+
+  const handleSearchClick = () => {
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        keyword: tempKeyword,
+        discountTypeFilter: tempDiscountType
+      });
+    } else {
+      onKeywordChange?.(tempKeyword);
+      onDiscountTypeFilterChange?.(tempDiscountType);
+    }
+  };
+
+  const handleResetClick = () => {
+    setTempKeyword('');
+    setTempDiscountType('');
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      onKeywordChange?.('');
+      onDiscountTypeFilterChange?.('');
+    }
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPromo, setEditingPromo] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [form] = Form.useForm();
   const selectedType = Form.useWatch('discountType', form);
 
@@ -65,8 +103,10 @@ export const PromotionManager = ({
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (record) => {
+  const handleOpenEdit = async (record) => {
     setEditingPromo(record);
+    setIsModalOpen(true);
+    setIsFetchingDetail(true);
     form.resetFields();
     let dType = record.discountType || 'TIENMAT';
     if (dType === 'FIXED') dType = 'TIENMAT';
@@ -83,7 +123,30 @@ export const PromotionManager = ({
       usageLimit: record.remainingUsage ?? record.usageLimit ?? 100,
       dates: record.startDate && record.endDate ? [dayjs(record.startDate), dayjs(record.endDate)] : null
     });
-    setIsModalOpen(true);
+
+    try {
+      const res = await promotionService.getPromotionByCode(record.promotionCode);
+      const detail = res?.data || record;
+      let detailType = detail.discountType || dType;
+      if (detailType === 'FIXED') detailType = 'TIENMAT';
+      if (detailType === 'PERCENT' || detailType === 'PERCENTAGE') detailType = 'PHANTRAM';
+
+      form.setFieldsValue({
+        promotionCode: detail.promotionCode || record.promotionCode,
+        promotionName: detail.promotionName || record.promotionName,
+        description: detail.description || record.description || '',
+        discountType: detailType,
+        discountValue: detail.discountValue !== undefined ? detail.discountValue : (record.discountValue || 0),
+        minOrderAmount: detail.minOrderAmount !== undefined ? detail.minOrderAmount : (record.minOrderAmount || 0),
+        maxDiscount: detail.maxDiscount || (detailType === 'TIENMAT' ? detail.discountValue : 0),
+        usageLimit: detail.remainingUsage ?? detail.usageLimit ?? record.remainingUsage ?? 100,
+        dates: detail.startDate && detail.endDate ? [dayjs(detail.startDate), dayjs(detail.endDate)] : null
+      });
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết khuyến mãi:', err);
+    } finally {
+      setIsFetchingDetail(false);
+    }
   };
 
   const handleModalSubmit = async () => {
@@ -278,20 +341,21 @@ export const PromotionManager = ({
       }
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm theo mã voucher hoặc tên khuyến mãi..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={keyword}
-          onChange={(e) => onKeywordChange(e.target.value)}
+          value={tempKeyword}
+          onChange={(e) => setTempKeyword(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 320 }}
         />
 
         <Select
           placeholder="Loại giảm giá"
-          value={discountTypeFilter}
-          onChange={onDiscountTypeFilterChange}
+          value={tempDiscountType}
+          onChange={setTempDiscountType}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả loại giảm' },
@@ -299,6 +363,22 @@ export const PromotionManager = ({
             { value: 'PHANTRAM', label: 'Phần trăm (%)' }
           ]}
         />
+
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       <Table
@@ -337,7 +417,8 @@ export const PromotionManager = ({
         width={680}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+        <Spin spinning={isFetchingDetail} tip="Đang tải dữ liệu khuyến mãi...">
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
           {editingPromo ? (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
               <Form.Item name="promotionCode" label="Mã Voucher">
@@ -480,6 +561,7 @@ export const PromotionManager = ({
             <RangePicker style={{ width: '100%' }} format="YYYY-MM-DD" />
           </Form.Item>
         </Form>
+        </Spin>
       </Modal>
     </Card>
   );

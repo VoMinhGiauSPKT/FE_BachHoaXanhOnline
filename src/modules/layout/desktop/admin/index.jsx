@@ -1,15 +1,8 @@
 import React from 'react';
-import { ConfigProvider, Row, Col, Card, Statistic } from 'antd';
-import {
-  InboxOutlined,
-  ShoppingOutlined,
-  GiftOutlined,
-  StarOutlined,
-  TeamOutlined,
-  AppstoreOutlined
-} from '@ant-design/icons';
+import { ConfigProvider } from 'antd';
 import ProductManager from './components/ProductManager';
 import CategoryManager from './components/CategoryManager';
+import SupplierManager from './components/SupplierManager';
 import OrderManager from './components/OrderManager';
 import PromotionManager from './components/PromotionManager';
 import EmployeeManager from './components/EmployeeManager';
@@ -28,6 +21,8 @@ export const DesktopAdmin = ({
   productCategoryFilter = '',
   productInStockFilter = '',
   isProductsLoading = false,
+  onProductSearchSubmit,
+  onProductResetFilters,
   onProductSearchChange,
   onProductCategoryFilterChange,
   onProductInStockFilterChange,
@@ -41,6 +36,12 @@ export const DesktopAdmin = ({
   onSaveCategory,
   onDeleteCategory,
   onRefreshCategories,
+  // Suppliers
+  suppliers = [],
+  isSupplierLoading = false,
+  onSaveSupplier,
+  onDeleteSupplier,
+  onRefreshSuppliers,
   // Orders
   orders = [],
   orderPage = 1,
@@ -52,6 +53,7 @@ export const DesktopAdmin = ({
   onViewOrderDetail,
   onCloseOrderDetail,
   onConfirmCod,
+  onCancelOrder,
   onRefreshOrders,
   // Promotions
   promotions = [],
@@ -61,6 +63,8 @@ export const DesktopAdmin = ({
   promoKeyword = '',
   promoTypeFilter = '',
   isPromoLoading = false,
+  onPromoSearchSubmit,
+  onPromoResetFilters,
   onPromoKeywordChange,
   onPromoTypeFilterChange,
   onPromoPageChange,
@@ -77,6 +81,8 @@ export const DesktopAdmin = ({
   empPositionFilter = '',
   empStatusFilter = '',
   isEmpLoading = false,
+  onEmpSearchSubmit,
+  onEmpResetFilters,
   onEmpSearchChange,
   onEmpPositionFilterChange,
   onEmpStatusFilterChange,
@@ -94,6 +100,8 @@ export const DesktopAdmin = ({
   reviewRatingFilter = '',
   reviewStatusFilter = '',
   isReviewsLoading = false,
+  onReviewSearchSubmit,
+  onReviewResetFilters,
   onReviewKeywordChange,
   onReviewRatingFilterChange,
   onReviewStatusFilterChange,
@@ -117,129 +125,6 @@ export const DesktopAdmin = ({
       }}
     >
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-        {/* KPI / Thống Kê Nhanh Tổng Quan */}
-        <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #10b981',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Sản phẩm trong kho</span>}
-                value={productTotal}
-                prefix={<InboxOutlined style={{ color: '#10b981', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #3b82f6',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Ngành hàng / DM</span>}
-                value={categories.length}
-                prefix={<AppstoreOutlined style={{ color: '#3b82f6', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #8b5cf6',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Đơn hàng hệ thống</span>}
-                value={orderTotal}
-                prefix={<ShoppingOutlined style={{ color: '#8b5cf6', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #f59e0b',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Đánh giá sản phẩm</span>}
-                value={reviewTotal}
-                prefix={<StarOutlined style={{ color: '#f59e0b', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #ec4899',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Mã khuyến mãi</span>}
-                value={promoTotal}
-                prefix={<GiftOutlined style={{ color: '#ec4899', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-
-          <Col xs={24} sm={12} md={8} lg={4}>
-            <Card
-              bordered={false}
-              style={{
-                borderRadius: 12,
-                boxShadow: '0 2px 8px rgba(0,0,0,0.04)',
-                borderLeft: '4px solid #06b6d4',
-                background: '#ffffff'
-              }}
-              styles={{ body: { padding: '16px 20px' } }}
-            >
-              <Statistic
-                title={<span style={{ fontSize: 13, color: '#64748b' }}>Nhân sự nội bộ</span>}
-                value={empTotal}
-                prefix={<TeamOutlined style={{ color: '#06b6d4', marginRight: 6 }} />}
-                valueStyle={{ color: '#0f172a', fontWeight: 700, fontSize: 22 }}
-              />
-            </Card>
-          </Col>
-        </Row>
-
         {/* Nội dung nghiệp vụ theo Tab */}
         <div>
           {activeTab === 'products' && (
@@ -253,6 +138,8 @@ export const DesktopAdmin = ({
               search={productSearch}
               categoryFilter={productCategoryFilter}
               inStockFilter={productInStockFilter}
+              onSearchSubmit={onProductSearchSubmit}
+              onResetFilters={onProductResetFilters}
               onSearchChange={onProductSearchChange}
               onCategoryFilterChange={onProductCategoryFilterChange}
               onInStockFilterChange={onProductInStockFilterChange}
@@ -260,6 +147,7 @@ export const DesktopAdmin = ({
               onSaveProduct={onSaveProduct}
               onDeleteProduct={onDeleteProduct}
               onRefresh={onRefreshProducts}
+              suppliers={suppliers}
             />
           )}
 
@@ -271,6 +159,17 @@ export const DesktopAdmin = ({
               onSaveCategory={onSaveCategory}
               onDeleteCategory={onDeleteCategory}
               onRefresh={onRefreshCategories}
+            />
+          )}
+
+          {activeTab === 'suppliers' && (
+            <SupplierManager
+              suppliers={suppliers}
+              isLoading={isSupplierLoading}
+              isAdmin={isAdmin}
+              onSaveSupplier={onSaveSupplier}
+              onDeleteSupplier={onDeleteSupplier}
+              onRefresh={onRefreshSuppliers}
             />
           )}
 
@@ -286,6 +185,7 @@ export const DesktopAdmin = ({
               onViewOrderDetail={onViewOrderDetail}
               onCloseOrderDetail={onCloseOrderDetail}
               onConfirmCod={onConfirmCod}
+              onCancelOrder={onCancelOrder}
               onRefresh={onRefreshOrders}
             />
           )}
@@ -299,6 +199,8 @@ export const DesktopAdmin = ({
               total={promoTotal}
               keyword={promoKeyword}
               discountTypeFilter={promoTypeFilter}
+              onSearchSubmit={onPromoSearchSubmit}
+              onResetFilters={onPromoResetFilters}
               onKeywordChange={onPromoKeywordChange}
               onDiscountTypeFilterChange={onPromoTypeFilterChange}
               onPageChange={onPromoPageChange}
@@ -319,6 +221,8 @@ export const DesktopAdmin = ({
               search={empSearch}
               positionFilter={empPositionFilter}
               statusFilter={empStatusFilter}
+              onSearchSubmit={onEmpSearchSubmit}
+              onResetFilters={onEmpResetFilters}
               onSearchChange={onEmpSearchChange}
               onPositionFilterChange={onEmpPositionFilterChange}
               onStatusFilterChange={onEmpStatusFilterChange}
@@ -340,6 +244,8 @@ export const DesktopAdmin = ({
               keyword={reviewKeyword}
               ratingFilter={reviewRatingFilter}
               statusFilter={reviewStatusFilter}
+              onSearchSubmit={onReviewSearchSubmit}
+              onResetFilters={onReviewResetFilters}
               onKeywordChange={onReviewKeywordChange}
               onRatingFilterChange={onReviewRatingFilterChange}
               onStatusFilterChange={onReviewStatusFilterChange}

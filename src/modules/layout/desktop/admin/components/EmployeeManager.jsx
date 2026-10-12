@@ -12,7 +12,8 @@ import {
   Input,
   Select,
   Form,
-  Switch
+  Switch,
+  Spin
 } from 'antd';
 import {
   PlusOutlined,
@@ -23,6 +24,7 @@ import {
   SearchOutlined
 } from '@ant-design/icons';
 import { POSITIONS, POSITION_LABELS } from '../../../../../constants/enums';
+import employeeService from '../../../../../services/employeeService';
 
 const { Text } = Typography;
 
@@ -35,6 +37,8 @@ export const EmployeeManager = ({
   search = '',
   positionFilter = '',
   statusFilter = '',
+  onSearchSubmit,
+  onResetFilters,
   onSearchChange,
   onPositionFilterChange,
   onStatusFilterChange,
@@ -44,9 +48,51 @@ export const EmployeeManager = ({
   onToggleEmployeeStatus,
   onRefresh
 }) => {
+  const [tempSearch, setTempSearch] = useState(search);
+  const [tempPosition, setTempPosition] = useState(positionFilter);
+  const [tempStatus, setTempStatus] = useState(statusFilter);
+
+  React.useEffect(() => {
+    setTempSearch(search);
+  }, [search]);
+  React.useEffect(() => {
+    setTempPosition(positionFilter);
+  }, [positionFilter]);
+  React.useEffect(() => {
+    setTempStatus(statusFilter);
+  }, [statusFilter]);
+
+  const handleSearchClick = () => {
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        positionFilter: tempPosition,
+        statusFilter: tempStatus
+      });
+    } else {
+      onSearchChange?.(tempSearch);
+      onPositionFilterChange?.(tempPosition);
+      onStatusFilterChange?.(tempStatus);
+    }
+  };
+
+  const handleResetClick = () => {
+    setTempSearch('');
+    setTempPosition('');
+    setTempStatus('');
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      onSearchChange?.('');
+      onPositionFilterChange?.('');
+      onStatusFilterChange?.('');
+    }
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [form] = Form.useForm();
 
   const handleOpenAdd = () => {
@@ -58,8 +104,10 @@ export const EmployeeManager = ({
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (record) => {
+  const handleOpenEdit = async (record) => {
     setEditingEmployee(record);
+    setIsModalOpen(true);
+    setIsFetchingDetail(true);
     form.resetFields();
     form.setFieldsValue({
       employeeId: record.employeeId || record.id,
@@ -69,7 +117,23 @@ export const EmployeeManager = ({
       phoneNumber: record.phoneNumber || '',
       position: record.position || 'STAFF'
     });
-    setIsModalOpen(true);
+
+    try {
+      const res = await employeeService.getEmployeeById(record.employeeId || record.id);
+      const detail = res?.data || record;
+      form.setFieldsValue({
+        employeeId: detail.employeeId || detail.id || record.employeeId || record.id,
+        username: detail.username || record.username,
+        fullName: detail.fullName || record.fullName,
+        email: detail.email || '',
+        phoneNumber: detail.phoneNumber || '',
+        position: detail.position || record.position || 'STAFF'
+      });
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết nhân viên:', err);
+    } finally {
+      setIsFetchingDetail(false);
+    }
   };
 
   const handleModalSubmit = async () => {
@@ -133,14 +197,26 @@ export const EmployeeManager = ({
       )
     },
     {
-      title: 'Liên Hệ',
-      key: 'contact',
-      width: 200,
-      render: (_, r) => (
-        <div style={{ fontSize: 13 }}>
-          <div>📞 {r.phoneNumber || 'Chưa cập nhật'}</div>
-          {r.email && <div style={{ color: '#64748b', fontSize: 12 }}>✉️ {r.email}</div>}
-        </div>
+      title: 'Số Điện Thoại',
+      dataIndex: 'phoneNumber',
+      key: 'phoneNumber',
+      width: 150,
+      render: (phone) => phone ? (
+        <span style={{ fontSize: 13, color: '#0f172a' }}>📞 {phone}</span>
+      ) : (
+        <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 13 }}>Chưa cập nhật</span>
+      )
+    },
+    {
+      title: 'Email',
+      dataIndex: 'email',
+      key: 'email',
+      width: 220,
+      ellipsis: true,
+      render: (email) => email ? (
+        <span style={{ fontSize: 13, color: '#2563eb' }}>✉️ {email}</span>
+      ) : (
+        <span style={{ color: '#94a3b8', fontStyle: 'italic', fontSize: 13 }}>Chưa cập nhật</span>
       )
     },
     {
@@ -234,20 +310,21 @@ export const EmployeeManager = ({
       }
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm theo họ tên, username hoặc số điện thoại..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={tempSearch}
+          onChange={(e) => setTempSearch(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 340 }}
         />
 
         <Select
           placeholder="Chức vụ"
-          value={positionFilter}
-          onChange={onPositionFilterChange}
+          value={tempPosition}
+          onChange={setTempPosition}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả chức vụ' },
@@ -258,8 +335,8 @@ export const EmployeeManager = ({
 
         <Select
           placeholder="Trạng thái"
-          value={statusFilter}
-          onChange={onStatusFilterChange}
+          value={tempStatus}
+          onChange={setTempStatus}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },
@@ -267,6 +344,22 @@ export const EmployeeManager = ({
             { value: 'false', label: 'Đã khóa' }
           ]}
         />
+
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       <Table
@@ -305,73 +398,75 @@ export const EmployeeManager = ({
         width={600}
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          <Form.Item
-            name="fullName"
-            label="Họ và tên nhân viên"
-            rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
-          >
-            <Input placeholder="Nguyễn Văn A" />
-          </Form.Item>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <Spin spinning={isFetchingDetail} tip="Đang tải dữ liệu nhân viên...">
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
             <Form.Item
-              name="username"
-              label="Tên đăng nhập (Username)"
-              rules={[
-                { required: true, message: 'Nhập tên đăng nhập' },
-                { pattern: /^[a-zA-Z0-9_-]{4,20}$/, message: '4-20 ký tự, không dấu' }
-              ]}
+              name="fullName"
+              label="Họ và tên nhân viên"
+              rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
             >
-              <Input placeholder="staff_01" disabled={Boolean(editingEmployee)} />
+              <Input placeholder="Nguyễn Văn A" />
             </Form.Item>
 
-            <Form.Item
-              name="password"
-              label={editingEmployee ? 'Mật khẩu mới (Bỏ trống nếu giữ nguyên)' : 'Mật khẩu'}
-              rules={editingEmployee ? [] : [
-                { required: true, message: 'Vui lòng nhập mật khẩu' },
-                { min: 6, message: 'Tối thiểu 6 ký tự' }
-              ]}
-            >
-              <Input.Password placeholder="••••••••" />
-            </Form.Item>
-          </div>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item
+                name="username"
+                label="Tên đăng nhập (Username)"
+                rules={[
+                  { required: true, message: 'Nhập tên đăng nhập' },
+                  { pattern: /^[a-zA-Z0-9_-]{4,20}$/, message: '4-20 ký tự, không dấu' }
+                ]}
+              >
+                <Input placeholder="staff_01" disabled={Boolean(editingEmployee)} />
+              </Form.Item>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-            <Form.Item
-              name="phoneNumber"
-              label="Số điện thoại"
-              rules={[
-                { required: true, message: 'Nhập số điện thoại' },
-                { pattern: /^[0-9]{10}$/, message: '10 chữ số hợp lệ' }
-              ]}
-            >
-              <Input placeholder="0912345678" />
-            </Form.Item>
+              <Form.Item
+                name="password"
+                label={editingEmployee ? 'Mật khẩu mới (Bỏ trống nếu giữ nguyên)' : 'Mật khẩu'}
+                rules={editingEmployee ? [] : [
+                  { required: true, message: 'Vui lòng nhập mật khẩu' },
+                  { min: 6, message: 'Tối thiểu 6 ký tự' }
+                ]}
+              >
+                <Input.Password placeholder="••••••••" />
+              </Form.Item>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item
+                name="phoneNumber"
+                label="Số điện thoại"
+                rules={[
+                  { required: true, message: 'Nhập số điện thoại' },
+                  { pattern: /^[0-9]{10}$/, message: '10 chữ số hợp lệ' }
+                ]}
+              >
+                <Input placeholder="0912345678" />
+              </Form.Item>
+
+              <Form.Item
+                name="email"
+                label="Email"
+                rules={[{ type: 'email', message: 'Email không hợp lệ' }]}
+              >
+                <Input placeholder="nhanvien@bachhoaxanh.com" />
+              </Form.Item>
+            </div>
 
             <Form.Item
-              name="email"
-              label="Email"
-              rules={[{ type: 'email', message: 'Email không hợp lệ' }]}
+              name="position"
+              label="Chức vụ phân quyền"
+              rules={[{ required: true }]}
             >
-              <Input placeholder="nhanvien@bachhoaxanh.com" />
+              <Select
+                options={[
+                  { value: 'STAFF', label: 'Nhân viên bán hàng / vận kho (STAFF)' },
+                  { value: 'ADMIN', label: 'Quản trị viên tối cao (ADMIN)' }
+                ]}
+              />
             </Form.Item>
-          </div>
-
-          <Form.Item
-            name="position"
-            label="Chức vụ phân quyền"
-            rules={[{ required: true }]}
-          >
-            <Select
-              options={[
-                { value: 'STAFF', label: 'Nhân viên bán hàng / vận kho (STAFF)' },
-                { value: 'ADMIN', label: 'Quản trị viên tối cao (ADMIN)' }
-              ]}
-            />
-          </Form.Item>
-        </Form>
+          </Form>
+        </Spin>
       </Modal>
     </Card>
   );

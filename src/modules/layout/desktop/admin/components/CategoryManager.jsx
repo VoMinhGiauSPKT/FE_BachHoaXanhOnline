@@ -11,7 +11,8 @@ import {
   Popconfirm,
   Card,
   Tooltip,
-  Typography
+  Typography,
+  Spin
 } from 'antd';
 import {
   PlusOutlined,
@@ -20,6 +21,7 @@ import {
   DeleteOutlined,
   ReloadOutlined
 } from '@ant-design/icons';
+import categoryService from '../../../../../services/categoryService';
 
 const { Text } = Typography;
 
@@ -31,10 +33,22 @@ export const CategoryManager = ({
   onDeleteCategory,
   onRefresh
 }) => {
-  const [search, setSearch] = useState('');
+  const [tempSearch, setTempSearch] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+
+  const handleSearchClick = () => {
+    setAppliedSearch(tempSearch.trim());
+  };
+
+  const handleResetClick = () => {
+    setTempSearch('');
+    setAppliedSearch('');
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [form] = Form.useForm();
 
   const handleOpenAdd = () => {
@@ -46,15 +60,32 @@ export const CategoryManager = ({
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (record) => {
+  const handleOpenEdit = async (record) => {
     setEditingCategory(record);
+    setIsModalOpen(true);
+    setIsFetchingDetail(true);
     form.resetFields();
     form.setFieldsValue({
       categoryId: record.categoryId,
       categoryName: record.categoryName,
-      profitMargin: record.profitMargin ?? 15
+      profitMargin: record.profitMargin ?? 0
     });
-    setIsModalOpen(true);
+
+    try {
+      const res = await categoryService.getCategoryById(record.categoryId);
+      const detail = res?.data || record;
+      form.setFieldsValue({
+        categoryId: detail.categoryId || record.categoryId,
+        categoryName: detail.categoryName || record.categoryName,
+        profitMargin: detail.profitMargin !== undefined && detail.profitMargin !== null
+          ? detail.profitMargin
+          : (record.profitMargin ?? 0)
+      });
+    } catch (err) {
+      console.error('Lỗi khi lấy chi tiết danh mục:', err);
+    } finally {
+      setIsFetchingDetail(false);
+    }
   };
 
   const handleModalSubmit = async () => {
@@ -64,7 +95,7 @@ export const CategoryManager = ({
       const payload = {
         categoryId: editingCategory ? editingCategory.categoryId : undefined,
         categoryName: values.categoryName.trim(),
-        profitMargin: Number(values.profitMargin || 15)
+        profitMargin: Number(values.profitMargin ?? 0)
       };
 
       const res = await onSaveCategory(payload, editingCategory?.categoryId);
@@ -80,8 +111,8 @@ export const CategoryManager = ({
   };
 
   const filteredCategories = categories.filter((c) => {
-    if (!search.trim()) return true;
-    const term = search.toLowerCase();
+    if (!appliedSearch) return true;
+    const term = appliedSearch.toLowerCase();
     return (
       (c.categoryName && c.categoryName.toLowerCase().includes(term)) ||
       (c.categoryId && c.categoryId.toLowerCase().includes(term))
@@ -114,7 +145,7 @@ export const CategoryManager = ({
       align: 'center',
       render: (margin) => (
         <Tag color="cyan" style={{ fontSize: 13, padding: '2px 10px' }}>
-          +{margin ?? 15}%
+          {margin !== undefined && margin !== null ? `+${margin}%` : 'Chưa thiết lập'}
         </Tag>
       )
     },
@@ -175,15 +206,30 @@ export const CategoryManager = ({
       }
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
-      <div style={{ marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm kiếm danh mục theo tên hoặc mã DM..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          value={tempSearch}
+          onChange={(e) => setTempSearch(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 320 }}
         />
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       <Table
@@ -214,35 +260,37 @@ export const CategoryManager = ({
         cancelText="Đóng"
         destroyOnClose
       >
-        <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
-          {editingCategory && (
-            <Form.Item name="categoryId" label="Mã danh mục">
-              <Input disabled />
+        <Spin spinning={isFetchingDetail} tip="Đang tải dữ liệu chi tiết...">
+          <Form form={form} layout="vertical" style={{ marginTop: 16 }}>
+            {editingCategory && (
+              <Form.Item name="categoryId" label="Mã danh mục">
+                <Input disabled />
+              </Form.Item>
+            )}
+
+            <Form.Item
+              name="categoryName"
+              label="Tên danh mục ngành hàng"
+              rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
+            >
+              <Input placeholder="Ví dụ: Bánh kẹo & Đồ ăn vặt" />
             </Form.Item>
-          )}
 
-          <Form.Item
-            name="categoryName"
-            label="Tên danh mục ngành hàng"
-            rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
-          >
-            <Input placeholder="Ví dụ: Bánh kẹo & Đồ ăn vặt" />
-          </Form.Item>
-
-          <Form.Item
-            name="profitMargin"
-            label="Tỷ suất lợi nhuận định mức (%)"
-            rules={[{ required: true, message: 'Vui lòng nhập tỷ suất lợi nhuận' }]}
-          >
-            <InputNumber
-              style={{ width: '100%' }}
-              min={0}
-              max={100}
-              step={0.5}
-              addonAfter="%"
-            />
-          </Form.Item>
-        </Form>
+            <Form.Item
+              name="profitMargin"
+              label="Tỷ suất lợi nhuận định mức (%)"
+              rules={[{ required: true, message: 'Vui lòng nhập tỷ suất lợi nhuận' }]}
+            >
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                max={100}
+                step={0.5}
+                addonAfter="%"
+              />
+            </Form.Item>
+          </Form>
+        </Spin>
       </Modal>
     </Card>
   );

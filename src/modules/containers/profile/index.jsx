@@ -43,6 +43,9 @@ export const ProfileContainer = () => {
   // Đánh giá của tôi
   const [myReviews, setMyReviews] = useState([]);
   const [isLoadingReviews, setIsLoadingReviews] = useState(false);
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewTotalPages, setReviewTotalPages] = useState(1);
+  const [reviewTotal, setReviewTotal] = useState(0);
 
   // Tải profile
   useEffect(() => {
@@ -96,12 +99,16 @@ export const ProfileContainer = () => {
   };
 
   // Tải đánh giá của tôi khi chuyển tab
-  const loadMyReviews = async () => {
+  const loadMyReviews = async (page = 1) => {
     setIsLoadingReviews(true);
     try {
-      const res = await reviewService.getMyReviews();
+      const res = await reviewService.getMyReviews({ page, limit: 10 });
       if (res.data?.reviews) {
         setMyReviews(res.data.reviews);
+        const total = res.data.total ?? res.data.reviews.length;
+        setReviewTotal(total);
+        setReviewPage(res.data.page ?? page);
+        setReviewTotalPages(Math.max(1, Math.ceil(total / 10)));
       }
     } catch {
       setMyReviews([
@@ -117,9 +124,28 @@ export const ProfileContainer = () => {
           }
         }
       ]);
+      setReviewTotal(1);
+      setReviewTotalPages(1);
     } finally {
       setIsLoadingReviews(false);
     }
+  };
+
+  const getReviewPageNumbers = () => {
+    if (reviewTotalPages <= 7) {
+      return Array.from({ length: reviewTotalPages }, (_, i) => i + 1);
+    }
+    const pages = [];
+    pages.push(1);
+    if (reviewPage > 3) pages.push('...');
+    const start = Math.max(2, reviewPage - 1);
+    const end = Math.min(reviewTotalPages - 1, reviewPage + 1);
+    for (let i = start; i <= end; i++) {
+      pages.push(i);
+    }
+    if (reviewPage < reviewTotalPages - 2) pages.push('...');
+    pages.push(reviewTotalPages);
+    return pages;
   };
 
   useEffect(() => {
@@ -261,7 +287,7 @@ export const ProfileContainer = () => {
     try {
       await reviewService.deleteReview(id);
       addToast({ type: 'info', message: 'Đã xóa bài đánh giá!' });
-      setMyReviews((prev) => prev.filter((r) => r.reviewId !== id));
+      await loadMyReviews(myReviews.length === 1 && reviewPage > 1 ? reviewPage - 1 : reviewPage);
     } catch (err) {
       addToast({ type: 'error', message: err.message || 'Không thể xóa!' });
     }
@@ -297,7 +323,7 @@ export const ProfileContainer = () => {
             className={`${styles.tabBtn} ${activeTab === 'reviews' ? styles.activeTab : ''}`}
             onClick={() => setActiveTab('reviews')}
           >
-            Đánh Giá Của Tôi ({myReviews.length})
+            Đánh Giá Của Tôi ({reviewTotal > 0 ? reviewTotal : myReviews.length})
           </button>
         </div>
 
@@ -495,33 +521,90 @@ export const ProfileContainer = () => {
         {/* Tab 3: Đánh giá của tôi */}
         {activeTab === 'reviews' && (
           <div className={styles.reviewsTabSection}>
-            <h3>Lịch Sử Đánh Giá Sản Phẩm Của Bạn</h3>
+            <div className={styles.reviewTabHeader}>
+              <h3>Lịch Sử Đánh Giá Sản Phẩm Của Bạn</h3>
+              {reviewTotal > 0 && (
+                <span className={styles.totalBadge}>{reviewTotal} nhận xét</span>
+              )}
+            </div>
+
             {isLoadingReviews ? (
               <p>Đang tải...</p>
             ) : myReviews.length === 0 ? (
               <p className={styles.emptyText}>Bạn chưa đánh giá sản phẩm nào.</p>
             ) : (
-              <div className={styles.myReviewsList}>
-                {myReviews.map((rev) => (
-                  <div key={rev.reviewId} className={styles.myReviewCard}>
-                    <div className={styles.myRevTop}>
-                      <strong>{rev.product?.productName || 'Sản phẩm FreshMart'}</strong>
-                      <span className={styles.stars}>{'★'.repeat(rev.rating)}</span>
+              <>
+                <div className={styles.myReviewsList}>
+                  {myReviews.map((rev) => (
+                    <div key={rev.reviewId} className={styles.myReviewCard}>
+                      <div className={styles.myRevTop}>
+                        <strong>{rev.product?.productName || 'Sản phẩm FreshMart'}</strong>
+                        <span className={styles.stars}>{'★'.repeat(rev.rating)}</span>
+                      </div>
+                      <p className={styles.myRevComment}>"{rev.comment}"</p>
+                      <div className={styles.myRevBottom}>
+                        <span className={styles.myRevTime}>{formatDate(rev.createdAt, true)}</span>
+                        <button
+                          type="button"
+                          className={styles.deleteRevBtn}
+                          onClick={() => handleDeleteReview(rev.reviewId)}
+                        >
+                          🗑️ Xóa đánh giá
+                        </button>
+                      </div>
                     </div>
-                    <p className={styles.myRevComment}>"{rev.comment}"</p>
-                    <div className={styles.myRevBottom}>
-                      <span className={styles.myRevTime}>{formatDate(rev.createdAt, true)}</span>
+                  ))}
+                </div>
+
+                {/* Thanh phân trang 10 đánh giá / trang */}
+                {reviewTotalPages > 1 && (
+                  <div className={styles.paginationBar}>
+                    <div className={styles.paginationInfo}>
+                      Hiển thị <strong>{(reviewPage - 1) * 10 + 1}</strong> -{' '}
+                      <strong>{Math.min(reviewPage * 10, reviewTotal)}</strong> trong tổng số{' '}
+                      <strong>{reviewTotal}</strong> đánh giá
+                    </div>
+                    <div className={styles.paginationControls}>
                       <button
                         type="button"
-                        className={styles.deleteRevBtn}
-                        onClick={() => handleDeleteReview(rev.reviewId)}
+                        className={styles.pageBtn}
+                        disabled={reviewPage <= 1}
+                        onClick={() => loadMyReviews(reviewPage - 1)}
                       >
-                        🗑️ Xóa đánh giá
+                        ← Trước
+                      </button>
+
+                      <div className={styles.pageNumbers}>
+                        {getReviewPageNumbers().map((p, idx) =>
+                          p === '...' ? (
+                            <span key={`dots-${idx}`} className={styles.pageDots}>
+                              ...
+                            </span>
+                          ) : (
+                            <button
+                              key={p}
+                              type="button"
+                              className={`${styles.numberBtn} ${p === reviewPage ? styles.activePage : ''}`}
+                              onClick={() => loadMyReviews(p)}
+                            >
+                              {p}
+                            </button>
+                          )
+                        )}
+                      </div>
+
+                      <button
+                        type="button"
+                        className={styles.pageBtn}
+                        disabled={reviewPage >= reviewTotalPages}
+                        onClick={() => loadMyReviews(reviewPage + 1)}
+                      >
+                        Sau →
                       </button>
                     </div>
                   </div>
-                ))}
-              </div>
+                )}
+              </>
             )}
           </div>
         )}

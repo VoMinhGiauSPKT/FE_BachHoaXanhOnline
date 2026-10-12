@@ -10,20 +10,7 @@ export const SidebarFilter = ({
   onInStockChange,
   onResetFilters
 }) => {
-  const [minPrice, setMinPrice] = useState('');
-  const [maxPrice, setMaxPrice] = useState('');
-
-  const handleApplyPrice = (e) => {
-    e.preventDefault();
-    onPriceFilterApply({
-      min: minPrice !== '' ? Number(minPrice) : null,
-      max: maxPrice !== '' ? Number(maxPrice) : null
-    });
-  };
-
   const handleReset = () => {
-    setMinPrice('');
-    setMaxPrice('');
     onResetFilters();
   };
 
@@ -74,34 +61,6 @@ export const SidebarFilter = ({
         </div>
       </div>
 
-      {/* Price Range Filter */}
-      <div className={styles.section}>
-        <h4 className={styles.sectionTitle}>Price Range (VND)</h4>
-        <form onSubmit={handleApplyPrice} className={styles.priceForm}>
-          <div className={styles.priceInputs}>
-            <input
-              type="number"
-              placeholder="Min đ"
-              value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
-              min="0"
-              step="5000"
-            />
-            <span className={styles.separator}>—</span>
-            <input
-              type="number"
-              placeholder="Max đ"
-              value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
-              min="0"
-              step="5000"
-            />
-          </div>
-          <button type="submit" className={styles.applyPriceBtn}>
-            Apply Price
-          </button>
-        </form>
-      </div>
 
       {/* Availability Toggle */}
       <div className={styles.section}>

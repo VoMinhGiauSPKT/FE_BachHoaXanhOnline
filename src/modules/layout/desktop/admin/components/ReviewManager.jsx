@@ -33,6 +33,8 @@ export const ReviewManager = ({
   keyword = '',
   ratingFilter = '',
   statusFilter = '',
+  onSearchSubmit,
+  onResetFilters,
   onKeywordChange,
   onRatingFilterChange,
   onStatusFilterChange,
@@ -41,6 +43,47 @@ export const ReviewManager = ({
   onReplyReview,
   onRefresh
 }) => {
+  const [tempKeyword, setTempKeyword] = useState(keyword);
+  const [tempRating, setTempRating] = useState(ratingFilter);
+  const [tempStatus, setTempStatus] = useState(statusFilter);
+
+  React.useEffect(() => {
+    setTempKeyword(keyword);
+  }, [keyword]);
+  React.useEffect(() => {
+    setTempRating(ratingFilter);
+  }, [ratingFilter]);
+  React.useEffect(() => {
+    setTempStatus(statusFilter);
+  }, [statusFilter]);
+
+  const handleSearchClick = () => {
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        keyword: tempKeyword,
+        ratingFilter: tempRating,
+        statusFilter: tempStatus
+      });
+    } else {
+      onKeywordChange?.(tempKeyword);
+      onRatingFilterChange?.(tempRating);
+      onStatusFilterChange?.(tempStatus);
+    }
+  };
+
+  const handleResetClick = () => {
+    setTempKeyword('');
+    setTempRating('');
+    setTempStatus('');
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      onKeywordChange?.('');
+      onRatingFilterChange?.('');
+      onStatusFilterChange?.('');
+    }
+  };
+
   const [replyModalOpen, setReplyModalOpen] = useState(false);
   const [activeReview, setActiveReview] = useState(null);
   const [replyText, setReplyText] = useState('');
@@ -223,20 +266,21 @@ export const ReviewManager = ({
       }
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm theo nội dung đánh giá hoặc tên SP..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={keyword}
-          onChange={(e) => onKeywordChange(e.target.value)}
+          value={tempKeyword}
+          onChange={(e) => setTempKeyword(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 340 }}
         />
 
         <Select
           placeholder="Số sao đánh giá"
-          value={ratingFilter}
-          onChange={onRatingFilterChange}
+          value={tempRating}
+          onChange={setTempRating}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả mức sao' },
@@ -250,8 +294,8 @@ export const ReviewManager = ({
 
         <Select
           placeholder="Trạng thái hiển thị"
-          value={statusFilter}
-          onChange={onStatusFilterChange}
+          value={tempStatus}
+          onChange={setTempStatus}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },
@@ -259,6 +303,22 @@ export const ReviewManager = ({
             { value: 'true', label: 'Đã ẩn/xóa' }
           ]}
         />
+
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       <Table

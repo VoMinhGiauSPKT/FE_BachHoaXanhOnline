@@ -12,17 +12,7 @@ export const Header = ({ onSearchChange, searchValue = '' }) => {
   const { totalItems, totalAmount, openCart } = useCartStore();
 
   const [keyword, setKeyword] = useState(searchValue);
-  const [selectedLocation, setSelectedLocation] = useState('Downtown Central');
-  const [isLocationDropdownOpen, setIsLocationDropdownOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-
-  const locations = [
-    'Downtown Central',
-    'Thủ Đức - Võ Văn Ngân',
-    'Bình Thạnh - Điện Biên Phủ',
-    'Quận 1 - Bến Nghé',
-    'Quận 7 - Phú Mỹ Hưng'
-  ];
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();
@@ -56,42 +46,6 @@ export const Header = ({ onSearchChange, searchValue = '' }) => {
             <span className={styles.brandTag}>ORGANIC & SUPERMARKET</span>
           </div>
         </Link>
-
-        {/* Location Selector Pill */}
-        <div className={styles.locationWrap}>
-          <button
-            type="button"
-            className={styles.locationPill}
-            onClick={() => setIsLocationDropdownOpen(!isLocationDropdownOpen)}
-            aria-expanded={isLocationDropdownOpen}
-          >
-            <span className={styles.pinIcon}>📍</span>
-            <div className={styles.locText}>
-              <span className={styles.locLabel}>DELIVER TO</span>
-              <span className={styles.locVal}>{selectedLocation}</span>
-            </div>
-            <span className={styles.arrowIcon}>▾</span>
-          </button>
-
-          {isLocationDropdownOpen && (
-            <div className={styles.locationMenu}>
-              <div className={styles.menuTitle}>Chọn khu vực nhận hàng</div>
-              {locations.map((loc) => (
-                <div
-                  key={loc}
-                  className={`${styles.menuItem} ${loc === selectedLocation ? styles.activeItem : ''}`}
-                  onClick={() => {
-                    setSelectedLocation(loc);
-                    setIsLocationDropdownOpen(false);
-                  }}
-                >
-                  <span>{loc}</span>
-                  {loc === selectedLocation && <span className={styles.check}>✓</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Live Search Bar */}
         <form className={styles.searchBar} onSubmit={handleSearchSubmit}>
@@ -150,13 +104,6 @@ export const Header = ({ onSearchChange, searchValue = '' }) => {
                     onClick={() => setIsUserMenuOpen(false)}
                   >
                     👤 Thông tin cá nhân
-                  </Link>
-                  <Link
-                    to={PATHS.ADDRESSES}
-                    className={styles.dropdownLink}
-                    onClick={() => setIsUserMenuOpen(false)}
-                  >
-                    📍 Sổ địa chỉ
                   </Link>
                   <button
                     type="button"

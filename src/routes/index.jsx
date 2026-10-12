@@ -87,6 +87,14 @@ export const AppRoutes = () => {
         }
       />
       <Route
+        path={PATHS.ADMIN.SUPPLIERS}
+        element={
+          <ProtectedRoute requiredUserType="EMPLOYEE">
+            <AdminContainer />
+          </ProtectedRoute>
+        }
+      />
+      <Route
         path={PATHS.ADMIN.ORDERS}
         element={
           <ProtectedRoute requiredUserType="EMPLOYEE">

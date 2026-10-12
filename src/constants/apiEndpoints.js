@@ -50,7 +50,9 @@ export const API_ENDPOINTS = {
   ORDER: {
     BASE: '/order',
     DETAIL: (id) => `/order/${id}`,
-    CONFIRM_COD: (id) => `/order/${id}/confirm-cod`
+    CONFIRM_COD: (id) => `/order/${id}/confirm-cod`,
+    CANCEL: (id) => `/order/${id}/cancel`,
+    CHANGE_PAYMENT: (id) => `/order/${id}/change-payment-method`
   },
 
   // 8. Khuyến mãi (Promotion)
@@ -78,6 +80,12 @@ export const API_ENDPOINTS = {
   PAYMENT: {
     CREATE: (orderId) => `/payment/create/${orderId}`,
     STATUS: (orderId) => `/payment/status/${orderId}`
+  },
+
+  // 12. Quản lý nhà cung cấp (Supplier)
+  SUPPLIER: {
+    BASE: '/supplier',
+    DETAIL: (id) => `/supplier/${id}`
   }
 };
 

@@ -68,6 +68,15 @@ export const AdminLayout = ({ children, activeTab = 'products', onTabChange }) =
 
           <button
             type="button"
+            className={`${styles.navItem} ${activeTab === 'suppliers' ? styles.active : ''}`}
+            onClick={() => onTabChange && onTabChange('suppliers')}
+          >
+            <span className={styles.icon}>🏭</span>
+            <span>Quản lý Nhà cung cấp</span>
+          </button>
+
+          <button
+            type="button"
             className={`${styles.navItem} ${activeTab === 'orders' ? styles.active : ''}`}
             onClick={() => onTabChange && onTabChange('orders')}
           >

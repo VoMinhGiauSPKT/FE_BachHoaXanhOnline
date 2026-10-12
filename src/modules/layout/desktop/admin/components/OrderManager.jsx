@@ -18,6 +18,7 @@ import {
 import {
   EyeOutlined,
   CheckCircleOutlined,
+  CloseCircleOutlined,
   ReloadOutlined,
   SearchOutlined
 } from '@ant-design/icons';
@@ -40,15 +41,30 @@ export const OrderManager = ({
   onViewOrderDetail,
   onCloseOrderDetail,
   onConfirmCod,
+  onCancelOrder,
   onRefresh
 }) => {
-  const [statusFilter, setStatusFilter] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [tempSearch, setTempSearch] = useState('');
+  const [tempStatus, setTempStatus] = useState('');
+  const [appliedSearch, setAppliedSearch] = useState('');
+  const [appliedStatus, setAppliedStatus] = useState('');
+
+  const handleSearchClick = () => {
+    setAppliedSearch(tempSearch.trim());
+    setAppliedStatus(tempStatus);
+  };
+
+  const handleResetClick = () => {
+    setTempSearch('');
+    setTempStatus('');
+    setAppliedSearch('');
+    setAppliedStatus('');
+  };
 
   const filteredOrders = orders.filter((o) => {
-    if (statusFilter && o.trangThai !== statusFilter) return false;
-    if (searchTerm.trim()) {
-      const term = searchTerm.toLowerCase();
+    if (appliedStatus && o.trangThai !== appliedStatus) return false;
+    if (appliedSearch) {
+      const term = appliedSearch.toLowerCase();
       const codeMatch = o.maDonHang?.toLowerCase().includes(term);
       const nameMatch = o.tenNguoiNhan?.toLowerCase().includes(term);
       const phoneMatch = o.soDienThoaiNhan?.toLowerCase().includes(term);
@@ -75,27 +91,6 @@ export const OrderManager = ({
       key: 'ngayLap',
       width: 170,
       render: (date) => formatDate(date, true)
-    },
-    {
-      title: 'Người Nhận',
-      key: 'receiver',
-      ellipsis: true,
-      render: (_, r) => (
-        <div>
-          <Text strong>{r.tenNguoiNhan || 'Khách hàng'}</Text>
-          <div style={{ fontSize: 12, color: '#64748b' }}>
-            📞 {r.soDienThoaiNhan || 'N/A'}
-          </div>
-        </div>
-      )
-    },
-    {
-      title: 'Số món',
-      dataIndex: 'soLuongMatHang',
-      key: 'soLuongMatHang',
-      width: 90,
-      align: 'center',
-      render: (count, r) => count ?? r.items?.length ?? 1
     },
     {
       title: 'Tổng Tiền',
@@ -129,9 +124,10 @@ export const OrderManager = ({
       align: 'center',
       render: (st) => {
         const isPaid = st === 'DATHANHTOAN' || st === 'COMPLETED';
+        const isCancelled = st === 'DAHUY' || st === 'CANCELLED';
         const label = ORDER_STATUS_LABELS[st] || st;
         return (
-          <Tag color={isPaid ? 'success' : 'warning'} style={{ fontWeight: 600 }}>
+          <Tag color={isPaid ? 'success' : isCancelled ? 'error' : 'warning'} style={{ fontWeight: 600 }}>
             {label}
           </Tag>
         );
@@ -140,7 +136,7 @@ export const OrderManager = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 160,
+      width: 190,
       align: 'center',
       render: (_, record) => {
         const isUnpaid = record.trangThai === 'CHUATHANHTOAN' || record.trangThai === 'PENDING';
@@ -156,24 +152,44 @@ export const OrderManager = ({
               />
             </Tooltip>
             {isUnpaid && (
-              <Popconfirm
-                title="Xác nhận thu tiền COD?"
-                description={`Xác nhận đã nhận đủ tiền COD cho đơn hàng ${record.maDonHang}?`}
-                onConfirm={() => onConfirmCod(record.maDonHang)}
-                okText="Đã thu tiền"
-                cancelText="Hủy"
-              >
-                <Tooltip title="Xác nhận đã thu tiền COD">
-                  <Button
-                    type="primary"
-                    size="small"
-                    style={{ background: '#10b981' }}
-                    icon={<CheckCircleOutlined />}
-                  >
-                    Thu COD
-                  </Button>
-                </Tooltip>
-              </Popconfirm>
+              <>
+                <Popconfirm
+                  title="Xác nhận thu tiền COD?"
+                  description={`Xác nhận đã nhận đủ tiền COD cho đơn hàng ${record.maDonHang}?`}
+                  onConfirm={() => onConfirmCod(record.maDonHang)}
+                  okText="Đã thu tiền"
+                  cancelText="Hủy"
+                >
+                  <Tooltip title="Xác nhận đã thu tiền COD">
+                    <Button
+                      type="primary"
+                      size="small"
+                      style={{ background: '#10b981' }}
+                      icon={<CheckCircleOutlined />}
+                    >
+                      Thu COD
+                    </Button>
+                  </Tooltip>
+                </Popconfirm>
+                <Popconfirm
+                  title="Xác nhận hủy hóa đơn?"
+                  description={`Hủy đơn ${record.maDonHang} sẽ hoàn trả lại số lượng sản phẩm vào kho và hoàn lại voucher (nếu có). Bạn có chắc chắn?`}
+                  onConfirm={() => onCancelOrder && onCancelOrder(record.maDonHang)}
+                  okText="Hủy hóa đơn"
+                  cancelText="Quay lại"
+                  okButtonProps={{ danger: true }}
+                >
+                  <Tooltip title="Hủy hóa đơn & hoàn trả kho">
+                    <Button
+                      danger
+                      size="small"
+                      icon={<CloseCircleOutlined />}
+                    >
+                      Hủy đơn
+                    </Button>
+                  </Tooltip>
+                </Popconfirm>
+              </>
             )}
           </Space>
         );
@@ -198,20 +214,21 @@ export const OrderManager = ({
       }
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm theo mã đơn, tên hoặc SĐT..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
+          value={tempSearch}
+          onChange={(e) => setTempSearch(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 300 }}
         />
 
         <Select
           placeholder="Lọc trạng thái"
-          value={statusFilter}
-          onChange={setStatusFilter}
+          value={tempStatus}
+          onChange={setTempStatus}
           style={{ width: 180 }}
           options={[
             { value: '', label: 'Tất cả trạng thái' },
@@ -219,6 +236,22 @@ export const OrderManager = ({
             { value: 'DATHANHTOAN', label: 'Đã thanh toán' }
           ]}
         />
+
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       <Table
@@ -275,6 +308,24 @@ export const OrderManager = ({
               </Button>
             </Popconfirm>
           ),
+          selectedOrderDetail && (selectedOrderDetail.trangThai === 'CHUATHANHTOAN' || selectedOrderDetail.trangThai === 'PENDING') && (
+            <Popconfirm
+              key="cancelOrder"
+              title="Xác nhận hủy hóa đơn này?"
+              description="Hủy hóa đơn sẽ hoàn trả số lượng sản phẩm vào kho và hoàn lại lượt voucher (nếu có)."
+              onConfirm={() => {
+                if (onCancelOrder) onCancelOrder(selectedOrderDetail.maDonHang);
+                onCloseOrderDetail();
+              }}
+              okText="Hủy hóa đơn"
+              cancelText="Quay lại"
+              okButtonProps={{ danger: true }}
+            >
+              <Button danger icon={<CloseCircleOutlined />}>
+                Hủy hóa đơn
+              </Button>
+            </Popconfirm>
+          ),
           <Button key="close" onClick={onCloseOrderDetail}>
             Đóng
           </Button>
@@ -308,6 +359,8 @@ export const OrderManager = ({
                   color={
                     selectedOrderDetail.trangThai === 'DATHANHTOAN' || selectedOrderDetail.trangThai === 'COMPLETED'
                       ? 'success'
+                      : selectedOrderDetail.trangThai === 'DAHUY' || selectedOrderDetail.trangThai === 'CANCELLED'
+                      ? 'error'
                       : 'warning'
                   }
                   style={{ fontWeight: 600 }}
@@ -315,6 +368,11 @@ export const OrderManager = ({
                   {ORDER_STATUS_LABELS[selectedOrderDetail.trangThai] || selectedOrderDetail.trangThai}
                 </Tag>
               </Descriptions.Item>
+              {selectedOrderDetail.maKhuyenMai && (
+                <Descriptions.Item label="Voucher Áp Dụng" span={2}>
+                  <Tag color="green" style={{ fontWeight: 600 }}>{selectedOrderDetail.maKhuyenMai}</Tag>
+                </Descriptions.Item>
+              )}
             </Descriptions>
 
             <Divider orientation="left" style={{ margin: '16px 0 12px' }}>

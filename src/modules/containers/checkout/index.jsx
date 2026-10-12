@@ -325,24 +325,68 @@ export const CheckoutContainer = () => {
                   promotions.map((promo) => {
                     const isSelected = selectedPromo?.promotionCode === promo.promotionCode;
                     const isEligible = Boolean(promo.isEligible ?? promo.eligible);
+                    const isPercent = promo.discountType === 'PHANTRAM' || promo.discountType === 'PERCENT';
                     return (
                       <div
                         key={promo.promotionCode}
                         className={`${styles.promoCard} ${isSelected ? styles.promoSelected : ''} ${!isEligible ? styles.promoDisabled : ''}`}
                         onClick={() => isEligible && setSelectedPromo(isSelected ? null : promo)}
                       >
-                        <div className={styles.promoCodeBadge}>{promo.promotionCode}</div>
-                        <div className={styles.promoInfo}>
-                          <strong>{promo.promotionName}</strong>
-                          {promo.unmetReason && <span className={styles.unmet}>{promo.unmetReason}</span>}
+                        <div className={styles.promoCardHeader}>
+                          <div className={styles.promoCodeBadge}>{promo.promotionCode}</div>
+                          {isEligible && promo.estimatedDiscount > 0 && (
+                            <div className={styles.promoSavingTag}>
+                              Tiết kiệm {formatVND(promo.estimatedDiscount)}
+                            </div>
+                          )}
                         </div>
-                        <button
-                          type="button"
-                          className={styles.applyPromoBtn}
-                          disabled={!isEligible}
-                        >
-                          {isSelected ? '✓ Bỏ chọn' : 'Áp dụng'}
-                        </button>
+
+                        <div className={styles.promoInfo}>
+                          <strong className={styles.promoTitle}>{promo.promotionName}</strong>
+
+                          <div className={styles.promoDetails}>
+                            {isPercent ? (
+                              <>
+                                <span className={styles.discountHighlight}>
+                                  🔥 Giảm {promo.discountValue}%
+                                </span>
+                                {promo.maxDiscount && Number(promo.maxDiscount) > 0 && (
+                                  <span className={styles.detailItem}>
+                                    (Tối đa {formatVND(promo.maxDiscount)})
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              <span className={styles.discountHighlight}>
+                                💵 Giảm {formatVND(promo.discountValue)}
+                              </span>
+                            )}
+
+                            {promo.minOrderAmount && Number(promo.minOrderAmount) > 0 && (
+                              <span className={styles.minOrder}>
+                                • Đơn tối thiểu {formatVND(promo.minOrderAmount)}
+                              </span>
+                            )}
+                          </div>
+
+                          {promo.description && (
+                            <div className={styles.promoDesc}>{promo.description}</div>
+                          )}
+
+                          {promo.unmetReason && (
+                            <span className={styles.unmet}>⚠️ {promo.unmetReason}</span>
+                          )}
+                        </div>
+
+                        <div className={styles.promoCardFooter}>
+                          <button
+                            type="button"
+                            className={`${styles.applyPromoBtn} ${isSelected ? styles.btnSelected : ''}`}
+                            disabled={!isEligible}
+                          >
+                            {isSelected ? '✓ Đang áp dụng' : (isEligible ? 'Áp dụng' : 'Chưa đủ điều kiện')}
+                          </button>
+                        </div>
                       </div>
                     );
                   })
@@ -420,9 +464,15 @@ export const CheckoutContainer = () => {
                 </div>
 
 
-                {discountAmount > 0 && (
+                {discountAmount > 0 && selectedPromo && (
                   <div className={`${styles.calcRow} ${styles.discountRow}`}>
-                    <span>Giảm giá voucher:</span>
+                    <span>
+                      Giảm giá voucher ({selectedPromo.promotionCode}
+                      {selectedPromo.discountType === 'PHANTRAM' || selectedPromo.discountType === 'PERCENT'
+                        ? ` -${selectedPromo.discountValue}%`
+                        : ` -${formatVND(selectedPromo.discountValue)}`}
+                      ):
+                    </span>
                     <span>-{formatVND(discountAmount)}</span>
                   </div>
                 )}

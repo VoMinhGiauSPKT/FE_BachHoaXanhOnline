@@ -286,6 +286,28 @@
   border-radius: $radius-lg;
   padding: 24px;
 
+  .reviewTabHeader {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+
+    h3 {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 0;
+    }
+
+    .totalBadge {
+      font-size: 12.5px;
+      font-weight: 700;
+      color: $color-primary-dark;
+      background: $color-primary-light;
+      padding: 4px 10px;
+      border-radius: $radius-full;
+    }
+  }
+
   h3 {
     font-size: 17px;
     font-weight: 800;
@@ -296,6 +318,97 @@
     color: $color-text-muted;
     text-align: center;
     padding: 30px;
+  }
+
+  .paginationBar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 20px;
+    margin-top: 16px;
+    border-top: 1px solid $color-border;
+    flex-wrap: wrap;
+    gap: 12px;
+
+    .paginationInfo {
+      font-size: 13.5px;
+      color: $color-text-secondary;
+      strong {
+        color: $color-text-main;
+        font-weight: 700;
+      }
+    }
+
+    .paginationControls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .pageBtn {
+      padding: 6px 14px;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      background: #ffffff;
+      font-size: 13px;
+      font-weight: 600;
+      color: $color-text-main;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(:disabled) {
+        border-color: $color-primary;
+        color: $color-primary-dark;
+        background: $color-primary-light;
+      }
+
+      &:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+      }
+    }
+
+    .pageNumbers {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .numberBtn {
+      min-width: 34px;
+      height: 34px;
+      padding: 0 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid $color-border;
+      border-radius: $radius-md;
+      background: #ffffff;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: $color-text-main;
+      cursor: pointer;
+      transition: all 0.15s ease;
+
+      &:hover:not(.activePage) {
+        border-color: $color-primary;
+        color: $color-primary-dark;
+      }
+
+      &.activePage {
+        background: $color-primary;
+        border-color: $color-primary;
+        color: #ffffff;
+        font-weight: 700;
+        box-shadow: $shadow-xs;
+      }
+    }
+
+    .pageDots {
+      padding: 0 4px;
+      color: $color-text-muted;
+      font-size: 13px;
+    }
   }
 }
 

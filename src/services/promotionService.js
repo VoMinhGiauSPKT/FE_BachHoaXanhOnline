@@ -21,6 +21,14 @@ export const promotionService = {
   },
 
   /**
+   * Xem chi tiết khuyến mãi theo mã
+   * @param {string} code
+   */
+  getPromotionByCode: async (code) => {
+    return await apiClient.get(API_ENDPOINTS.PROMOTION.DETAIL(code));
+  },
+
+  /**
    * Tạo voucher khuyến mãi mới (Admin)
    */
   createPromotion: async (promoData) => {

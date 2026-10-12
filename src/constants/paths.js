@@ -21,6 +21,7 @@ export const PATHS = {
     DASHBOARD: '/admin',
     PRODUCTS: '/admin/products',
     CATEGORIES: '/admin/categories',
+    SUPPLIERS: '/admin/suppliers',
     ORDERS: '/admin/orders',
     PROMOTIONS: '/admin/promotions',
     EMPLOYEES: '/admin/employees',

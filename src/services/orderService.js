@@ -35,6 +35,23 @@ export const orderService = {
   },
 
   /**
+   * Nhân viên / Admin hủy hóa đơn chưa thanh toán (hoàn lại kho và voucher)
+   * @param {string} id
+   */
+  cancelOrder: async (id) => {
+    return await apiClient.patch(API_ENDPOINTS.ORDER.CANCEL(id));
+  },
+
+  /**
+   * Đổi phương thức thanh toán cho đơn hàng chưa thanh toán (COD hoặc VIETQR)
+   * @param {string} id
+   * @param {string} paymentMethod
+   */
+  changePaymentMethod: async (id, paymentMethod) => {
+    return await apiClient.patch(API_ENDPOINTS.ORDER.CHANGE_PAYMENT(id), { paymentMethod });
+  },
+
+  /**
    * Tạo giao dịch thanh toán trực tuyến Dynamic VietQR (PayOS)
    * @param {string} orderId
    */

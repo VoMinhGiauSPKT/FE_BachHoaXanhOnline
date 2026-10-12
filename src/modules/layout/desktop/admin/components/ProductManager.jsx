@@ -14,7 +14,8 @@ import {
   Popconfirm,
   Card,
   Tooltip,
-  Typography
+  Typography,
+  Spin
 } from 'antd';
 import {
   PlusOutlined,
@@ -27,6 +28,7 @@ import dayjs from 'dayjs';
 import { formatVND } from '../../../../../utils/formatCurrency';
 import { formatDate } from '../../../../../utils/formatDate';
 import { PRODUCT_UNIT_OPTIONS, PRODUCT_UNITS } from '../../../../../constants/enums';
+import productService from '../../../../../services/productService';
 
 const { Text } = Typography;
 
@@ -38,6 +40,7 @@ const SUPPLIERS = [
 export const ProductManager = ({
   products = [],
   categories = [],
+  suppliers = [],
   isLoading = false,
   page = 1,
   limit = 20,
@@ -45,6 +48,8 @@ export const ProductManager = ({
   search = '',
   categoryFilter = '',
   inStockFilter = '',
+  onSearchSubmit,
+  onResetFilters,
   onSearchChange,
   onCategoryFilterChange,
   onInStockFilterChange,
@@ -53,43 +58,145 @@ export const ProductManager = ({
   onDeleteProduct,
   onRefresh
 }) => {
+  const [tempSearch, setTempSearch] = useState(search);
+  const [tempCategory, setTempCategory] = useState(categoryFilter);
+  const [tempInStock, setTempInStock] = useState(inStockFilter);
+
+  React.useEffect(() => {
+    setTempSearch(search);
+  }, [search]);
+  React.useEffect(() => {
+    setTempCategory(categoryFilter);
+  }, [categoryFilter]);
+  React.useEffect(() => {
+    setTempInStock(inStockFilter);
+  }, [inStockFilter]);
+
+  const handleSearchClick = () => {
+    if (onSearchSubmit) {
+      onSearchSubmit({
+        search: tempSearch,
+        categoryFilter: tempCategory,
+        inStockFilter: tempInStock
+      });
+    } else {
+      onSearchChange?.(tempSearch);
+      onCategoryFilterChange?.(tempCategory);
+      onInStockFilterChange?.(tempInStock);
+    }
+  };
+
+  const handleResetClick = () => {
+    setTempSearch('');
+    setTempCategory('');
+    setTempInStock('');
+    if (onResetFilters) {
+      onResetFilters();
+    } else {
+      onSearchChange?.('');
+      onCategoryFilterChange?.('');
+      onInStockFilterChange?.('');
+    }
+  };
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isFetchingDetail, setIsFetchingDetail] = useState(false);
   const [form] = Form.useForm();
+
+  const calculateSellingPrice = (importPrice, categoryId, vat) => {
+    const imp = Number(importPrice || 0);
+    if (imp <= 0) return 0;
+    const cat = categories.find(c => c.categoryId === categoryId);
+    const margin = cat?.profitMargin ?? 15;
+    const vatRate = typeof vat === 'number' ? vat : 0.08;
+    return Math.round(imp * (1 + margin / 100) * (1 + vatRate));
+  };
 
   const handleOpenAdd = () => {
     setEditingProduct(null);
     form.resetFields();
+    const defaultCatId = categories[0]?.categoryId || 'DM0001';
+    const defaultSupplierId = (suppliers && suppliers.length > 0)
+      ? (suppliers[0].supplierId || suppliers[0].maNhaCungCap)
+      : 'NCC02';
+    const defaultImportPrice = 40000;
+    const defaultVat = 0.08;
+    const autoSellingPrice = calculateSellingPrice(defaultImportPrice, defaultCatId, defaultVat);
+
     form.setFieldsValue({
-      categoryId: categories[0]?.categoryId || 'DM01',
-      supplierId: 'NCC02',
+      categoryId: defaultCatId,
+      supplierId: defaultSupplierId,
       unit: PRODUCT_UNITS.KG,
       stock: 50,
-      vat: 0.08,
-      sellingPrice: 50000,
-      importPrice: 40000
+      vat: defaultVat,
+      importPrice: defaultImportPrice,
+      sellingPrice: autoSellingPrice
     });
     setIsModalOpen(true);
   };
 
-  const handleOpenEdit = (record) => {
+  const handleOpenEdit = async (record) => {
     setEditingProduct(record);
+    setIsModalOpen(true);
+    setIsFetchingDetail(true);
     form.resetFields();
+
+    const initialCatId = record.category?.categoryId || record.categoryId || categories[0]?.categoryId || 'DM0001';
+    const initialImport = record.importPrice || Math.round((record.price || record.sellingPrice || 0) * 0.8);
+    const initialVat = record.vat ?? 0.08;
+    const initialPrice = record.price || record.sellingPrice || calculateSellingPrice(initialImport, initialCatId, initialVat);
+
     form.setFieldsValue({
       productId: record.productId || record.id,
       productName: record.productName || record.name,
-      categoryId: record.category?.categoryId || record.categoryId || categories[0]?.categoryId || 'DM01',
+      categoryId: initialCatId,
       supplierId: record.supplierId || 'NCC02',
-      sellingPrice: record.price || record.sellingPrice || 0,
-      importPrice: record.importPrice || Math.round((record.price || 0) * 0.8),
-      vat: record.vat ?? 0.08,
+      sellingPrice: initialPrice,
+      importPrice: initialImport,
+      vat: initialVat,
       unit: record.unit || PRODUCT_UNITS.KG,
       stock: record.stock ?? record.quantity ?? 0,
       imageUrl: record.imageUrl || '',
       expiryDate: record.expiryDate ? dayjs(record.expiryDate) : null
     });
-    setIsModalOpen(true);
+
+    try {
+      const res = await productService.getProductById(record.productId || record.id);
+      const detail = res?.data || record;
+      const catId = detail.category?.categoryId || detail.categoryId || initialCatId;
+      const imp = detail.importPrice !== undefined && detail.importPrice !== null ? Number(detail.importPrice) : initialImport;
+      const vatRate = detail.vat !== undefined && detail.vat !== null ? Number(detail.vat) : initialVat;
+      const autoPrice = calculateSellingPrice(imp, catId, vatRate);
+
+      form.setFieldsValue({
+        productId: detail.productId || record.productId || record.id,
+        productName: detail.productName || record.productName || record.name,
+        categoryId: catId,
+        supplierId: detail.supplier?.supplierId || detail.supplierId || record.supplierId || 'NCC02',
+        importPrice: imp,
+        vat: vatRate,
+        sellingPrice: (detail.price !== undefined && detail.price !== null && Number(detail.price) > 0)
+          ? Number(detail.price)
+          : (record.price || record.sellingPrice || (autoPrice > 0 ? autoPrice : initialPrice)),
+        unit: detail.unit || record.unit || PRODUCT_UNITS.KG,
+        stock: detail.stock ?? record.stock ?? record.quantity ?? 0,
+        imageUrl: detail.imageUrl || record.imageUrl || '',
+        expiryDate: detail.expiryDate ? dayjs(detail.expiryDate) : (record.expiryDate ? dayjs(record.expiryDate) : null)
+      });
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết sản phẩm:', err);
+    } finally {
+      setIsFetchingDetail(false);
+    }
+  };
+
+  const handleValuesChange = (changedValues, allValues) => {
+    if (!editingProduct && ('importPrice' in changedValues || 'categoryId' in changedValues || 'vat' in changedValues)) {
+      const autoPrice = calculateSellingPrice(allValues.importPrice, allValues.categoryId, allValues.vat);
+      form.setFieldValue('sellingPrice', autoPrice);
+    }
   };
 
   const handleModalSubmit = async () => {
@@ -136,16 +243,16 @@ export const ProductManager = ({
       title: 'Hình ảnh',
       dataIndex: 'imageUrl',
       key: 'imageUrl',
-      width: 80,
+      width: 110,
       align: 'center',
       render: (url, record) => (
         <Image
           src={url || record.icon}
           alt={record.productName}
-          width={50}
-          height={50}
+          width={60}
+          height={60}
           style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #f0f0f0' }}
-          fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='50' height='50'><rect width='50' height='50' fill='%23f1f5f9'/><text x='50%' y='50%' font-size='11' text-anchor='middle' fill='%2394a3b8' dy='.3em'>BHX</text></svg>"
+          fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%23f1f5f9'/><text x='50%' y='50%' font-size='12' text-anchor='middle' fill='%2394a3b8' dy='.3em'>BHX</text></svg>"
         />
       )
     },
@@ -153,12 +260,12 @@ export const ProductManager = ({
       title: 'Tên Sản Phẩm',
       dataIndex: 'productName',
       key: 'productName',
-      ellipsis: true,
+      width: 280,
       render: (name, record) => (
-        <div>
+        <div style={{ wordBreak: 'break-word' }}>
           <Text strong style={{ fontSize: 14 }}>{name || record.name}</Text>
           {record.expiryDate && (
-            <div style={{ fontSize: 12, color: '#8c8c8c' }}>
+            <div style={{ fontSize: 12, color: '#8c8c8c', marginTop: 4 }}>
               HSD: {formatDate(record.expiryDate)}
             </div>
           )}
@@ -169,12 +276,12 @@ export const ProductManager = ({
       title: 'Danh mục',
       dataIndex: 'category',
       key: 'category',
-      width: 160,
+      width: 220,
       render: (cat, record) => {
         const catName = cat?.categoryName ||
           categories.find(c => c.categoryId === record.categoryId)?.categoryName ||
           'Chưa phân loại';
-        return <Tag color="blue">{catName}</Tag>;
+        return <Tag color="blue" style={{ fontSize: 13, padding: '3px 10px', borderRadius: 12 }}>{catName}</Tag>;
       }
     },
     {
@@ -276,20 +383,21 @@ export const ProductManager = ({
       style={{ borderRadius: 12, boxShadow: '0 2px 10px rgba(0,0,0,0.04)' }}
     >
       {/* Thanh lọc & tìm kiếm */}
-      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', marginBottom: 20 }}>
+      <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap', alignItems: 'center', marginBottom: 20 }}>
         <Input
           placeholder="Tìm tên sản phẩm theo từ khóa..."
           prefix={<SearchOutlined style={{ color: '#bfbfbf' }} />}
-          value={search}
-          onChange={(e) => onSearchChange(e.target.value)}
+          value={tempSearch}
+          onChange={(e) => setTempSearch(e.target.value)}
+          onPressEnter={handleSearchClick}
           allowClear
           style={{ width: 280 }}
         />
 
         <Select
           placeholder="Lọc theo Danh mục"
-          value={categoryFilter || undefined}
-          onChange={onCategoryFilterChange}
+          value={tempCategory || undefined}
+          onChange={(val) => setTempCategory(val || '')}
           allowClear
           style={{ width: 200 }}
           options={[
@@ -300,8 +408,8 @@ export const ProductManager = ({
 
         <Select
           placeholder="Trạng thái tồn kho"
-          value={inStockFilter}
-          onChange={onInStockFilterChange}
+          value={tempInStock}
+          onChange={(val) => setTempInStock(val !== undefined ? val : '')}
           style={{ width: 170 }}
           options={[
             { value: '', label: 'Tất cả tồn kho' },
@@ -309,6 +417,22 @@ export const ProductManager = ({
             { value: 'false', label: 'Đã hết hàng' }
           ]}
         />
+
+        <Button
+          type="primary"
+          icon={<SearchOutlined />}
+          onClick={handleSearchClick}
+          style={{ background: '#10b981', borderColor: '#10b981', fontWeight: 600 }}
+        >
+          Tìm kiếm
+        </Button>
+
+        <Button
+          icon={<ReloadOutlined />}
+          onClick={handleResetClick}
+        >
+          Đặt lại
+        </Button>
       </div>
 
       {/* Bảng dữ liệu có phân trang chuẩn (Page & Limit) */}
@@ -348,16 +472,27 @@ export const ProductManager = ({
         width={720}
         destroyOnClose
       >
-        <Form
-          form={form}
-          layout="vertical"
-          style={{ marginTop: 16 }}
-        >
-          {editingProduct ? (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
-              <Form.Item name="productId" label="Mã sản phẩm">
-                <Input disabled />
-              </Form.Item>
+        <Spin spinning={isFetchingDetail} tip="Đang tải dữ liệu chi tiết sản phẩm...">
+          <Form
+            form={form}
+            layout="vertical"
+            style={{ marginTop: 16 }}
+            onValuesChange={handleValuesChange}
+          >
+            {editingProduct ? (
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 2fr', gap: 16 }}>
+                <Form.Item name="productId" label="Mã sản phẩm">
+                  <Input disabled />
+                </Form.Item>
+                <Form.Item
+                  name="productName"
+                  label="Tên sản phẩm"
+                  rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
+                >
+                  <Input placeholder="Ví dụ: Táo Envy Mỹ nhập khẩu túi 1kg" />
+                </Form.Item>
+              </div>
+            ) : (
               <Form.Item
                 name="productName"
                 label="Tên sản phẩm"
@@ -365,137 +500,212 @@ export const ProductManager = ({
               >
                 <Input placeholder="Ví dụ: Táo Envy Mỹ nhập khẩu túi 1kg" />
               </Form.Item>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <Form.Item
+                name="categoryId"
+                label={
+                  <Space size={4}>
+                    <span>Danh mục sản phẩm</span>
+                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                  </Space>
+                }
+                rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
+              >
+                <Select
+                  disabled={Boolean(editingProduct)}
+                  options={categories.map(c => ({
+                    value: c.categoryId,
+                    label: `${c.categoryName} (${c.categoryId}) [Tỷ suất LN: +${c.profitMargin ?? 15}%]`
+                  }))}
+                  placeholder="Chọn danh mục"
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="supplierId"
+                label={
+                  <Space size={4}>
+                    <span>Nhà cung cấp</span>
+                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                  </Space>
+                }
+                rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp' }]}
+              >
+                <Select
+                  disabled={Boolean(editingProduct)}
+                  options={
+                    suppliers && suppliers.length > 0
+                      ? suppliers.map(s => ({
+                          value: s.supplierId || s.maNhaCungCap,
+                          label: `${s.supplierName || s.tenNhaCungCap} (${s.supplierId || s.maNhaCungCap})`
+                        }))
+                      : SUPPLIERS
+                  }
+                  placeholder="Chọn nhà cung cấp"
+                />
+              </Form.Item>
             </div>
-          ) : (
-            <Form.Item
-              name="productName"
-              label="Tên sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng nhập tên sản phẩm' }]}
-            >
-              <Input placeholder="Ví dụ: Táo Envy Mỹ nhập khẩu túi 1kg" />
-            </Form.Item>
-          )}
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <Form.Item
+                name="importPrice"
+                label={
+                  <Space size={4}>
+                    <span>Giá nhập (VND)</span>
+                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                  </Space>
+                }
+                rules={[{ required: true, message: 'Nhập giá nhập' }]}
+              >
+                <InputNumber
+                  disabled={Boolean(editingProduct)}
+                  style={{ width: '100%' }}
+                  min={0}
+                  step={1000}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                  placeholder="Nhập giá nhập..."
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="vat"
+                label={
+                  <Space size={4}>
+                    <span>Thuế VAT</span>
+                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                  </Space>
+                }
+                rules={[{ required: true, message: 'Nhập thuế VAT' }]}
+              >
+                <Select
+                  disabled={Boolean(editingProduct)}
+                  options={[
+                    { value: 0.05, label: '5%' },
+                    { value: 0.08, label: '8% (Tiêu chuẩn)' },
+                    { value: 0.1, label: '10%' }
+                  ]}
+                />
+              </Form.Item>
+
+              <Form.Item
+                name="sellingPrice"
+                label={
+                  <Space size={4}>
+                    <span>Giá bán (VND)</span>
+                    {editingProduct && <Tag color="default" style={{ fontSize: 11 }}>Cố định</Tag>}
+                  </Space>
+                }
+                rules={[{ required: true, message: 'Vui lòng nhập giá bán' }]}
+              >
+                <InputNumber
+                  disabled={Boolean(editingProduct)}
+                  style={{ width: '100%', fontWeight: 700, color: '#059669' }}
+                  min={0}
+                  step={1000}
+                  formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                  parser={value => value.replace(/\$\s?|(,*)/g, '')}
+                  placeholder="Nhập giá bán..."
+                />
+              </Form.Item>
+            </div>
+
+            {!editingProduct && (
+              <Form.Item noStyle shouldUpdate={(prev, curr) => prev.importPrice !== curr.importPrice || prev.categoryId !== curr.categoryId || prev.vat !== curr.vat || prev.sellingPrice !== curr.sellingPrice}>
+                {({ getFieldValue }) => {
+                  const imp = Number(getFieldValue('importPrice') || 0);
+                  const catId = getFieldValue('categoryId');
+                  const vatRate = Number(getFieldValue('vat') !== undefined ? getFieldValue('vat') : 0.08);
+                  const cat = categories.find(c => c.categoryId === catId);
+                  const margin = cat?.profitMargin ?? 15;
+                  const sell = Number(getFieldValue('sellingPrice') || 0);
+
+                  return (
+                    <div style={{
+                      marginTop: -8,
+                      marginBottom: 16,
+                      padding: '8px 12px',
+                      background: '#f0fdf4',
+                      borderRadius: 8,
+                      border: '1px solid #bbf7d0',
+                      fontSize: 12,
+                      color: '#166534',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: 8
+                    }}>
+                      <div>
+                        <strong>💡 Công thức định giá:</strong> Giá nhập ({formatVND(imp)}) × (1 + Tỷ suất LN {margin}%) × (1 + Thuế VAT {vatRate * 100}%)
+                      </div>
+                      <div>
+                        <strong>= {formatVND(sell)}</strong>
+                      </div>
+                    </div>
+                  );
+                }}
+              </Form.Item>
+            )}
+
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
+              <Form.Item
+                name="unit"
+                label="Đơn vị tính"
+                rules={[{ required: true, message: 'Chọn đơn vị tính' }]}
+              >
+                <Select options={PRODUCT_UNIT_OPTIONS} />
+              </Form.Item>
+
+              <Form.Item
+                name="stock"
+                label="Số lượng tồn kho"
+                rules={[{ required: true, message: 'Nhập số lượng kho' }]}
+              >
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+
+              <Form.Item
+                name="expiryDate"
+                label="Hạn sử dụng (HSD)"
+              >
+                <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" placeholder="Chọn ngày" />
+              </Form.Item>
+            </div>
+
             <Form.Item
-              name="categoryId"
-              label="Danh mục sản phẩm"
-              rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
+              name="imageUrl"
+              label="Hình ảnh sản phẩm (URL hoặc chuỗi Base64)"
+              rules={[{ required: true, message: 'Vui lòng nhập link ảnh hoặc dán chuỗi Base64' }]}
             >
-              <Select
-                options={categories.map(c => ({ value: c.categoryId, label: `${c.categoryName} (${c.categoryId})` }))}
-                placeholder="Chọn danh mục"
+              <Input.TextArea
+                rows={2}
+                placeholder="Nhập link ảnh (https://...) hoặc dán chuỗi Base64 (data:image/...)"
               />
             </Form.Item>
 
-            <Form.Item
-              name="supplierId"
-              label="Nhà cung cấp"
-              rules={[{ required: true, message: 'Vui lòng chọn nhà cung cấp' }]}
-            >
-              <Select options={SUPPLIERS} placeholder="Chọn nhà cung cấp" />
+            <Form.Item noStyle shouldUpdate={(prev, curr) => prev.imageUrl !== curr.imageUrl}>
+              {({ getFieldValue }) => {
+                const imgUrl = getFieldValue('imageUrl');
+                return imgUrl ? (
+                  <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 13, color: '#64748b' }}>Xem trước ảnh:</span>
+                    <Image
+                      src={imgUrl}
+                      alt="Preview"
+                      width={60}
+                      height={60}
+                      style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }}
+                      fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%23f1f5f9'/><text x='50%' y='50%' font-size='10' text-anchor='middle' fill='%23ef4444' dy='.3em'>Ảnh lỗi</text></svg>"
+                    />
+                  </div>
+                ) : null;
+              }}
             </Form.Item>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <Form.Item
-              name="sellingPrice"
-              label="Giá bán (VND)"
-              rules={[{ required: true, message: 'Nhập giá bán' }]}
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                min={1000}
-                step={1000}
-                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={value => value.replace(/\$\s?|(,*)/g, '')}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="importPrice"
-              label="Giá nhập (VND)"
-              rules={[{ required: true, message: 'Nhập giá nhập' }]}
-            >
-              <InputNumber
-                style={{ width: '100%' }}
-                min={0}
-                step={1000}
-                formatter={value => `${value}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
-                parser={value => value.replace(/\$\s?|(,*)/g, '')}
-              />
-            </Form.Item>
-
-            <Form.Item
-              name="vat"
-              label="Thuế VAT"
-              rules={[{ required: true, message: 'Nhập thuế VAT' }]}
-            >
-              <Select
-                options={[
-                  { value: 0.05, label: '5%' },
-                  { value: 0.08, label: '8% (Tiêu chuẩn)' },
-                  { value: 0.1, label: '10%' }
-                ]}
-              />
-            </Form.Item>
-          </div>
-
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-            <Form.Item
-              name="unit"
-              label="Đơn vị tính"
-              rules={[{ required: true, message: 'Chọn đơn vị tính' }]}
-            >
-              <Select options={PRODUCT_UNIT_OPTIONS} />
-            </Form.Item>
-
-            <Form.Item
-              name="stock"
-              label="Số lượng tồn kho"
-              rules={[{ required: true, message: 'Nhập số lượng kho' }]}
-            >
-              <InputNumber style={{ width: '100%' }} min={0} />
-            </Form.Item>
-
-            <Form.Item
-              name="expiryDate"
-              label="Hạn sử dụng (HSD)"
-            >
-              <DatePicker style={{ width: '100%' }} format="YYYY-MM-DD" placeholder="Chọn ngày" />
-            </Form.Item>
-          </div>
-
-          <Form.Item
-            name="imageUrl"
-            label="Hình ảnh sản phẩm (URL hoặc chuỗi Base64)"
-            rules={[{ required: true, message: 'Vui lòng nhập link ảnh hoặc dán chuỗi Base64' }]}
-          >
-            <Input.TextArea
-              rows={2}
-              placeholder="Nhập link ảnh (https://...) hoặc dán chuỗi Base64 (data:image/...)"
-            />
-          </Form.Item>
-
-          <Form.Item noStyle shouldUpdate={(prev, curr) => prev.imageUrl !== curr.imageUrl}>
-            {({ getFieldValue }) => {
-              const imgUrl = getFieldValue('imageUrl');
-              return imgUrl ? (
-                <div style={{ marginBottom: 16, display: 'flex', alignItems: 'center', gap: 12 }}>
-                  <span style={{ fontSize: 13, color: '#64748b' }}>Xem trước ảnh:</span>
-                  <Image
-                    src={imgUrl}
-                    alt="Preview"
-                    width={60}
-                    height={60}
-                    style={{ objectFit: 'cover', borderRadius: 8, border: '1px solid #e2e8f0' }}
-                    fallback="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='60' height='60'><rect width='60' height='60' fill='%23f1f5f9'/><text x='50%' y='50%' font-size='10' text-anchor='middle' fill='%23ef4444' dy='.3em'>Ảnh lỗi</text></svg>"
-                  />
-                </div>
-              ) : null;
-            }}
-          </Form.Item>
-        </Form>
+          </Form>
+        </Spin>
       </Modal>
     </Card>
   );
