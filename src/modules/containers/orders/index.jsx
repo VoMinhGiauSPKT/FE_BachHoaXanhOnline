@@ -197,7 +197,14 @@ export const OrdersContainer = () => {
                     <td>{formatDate(o.ngayLap, true)}</td>
                     <td>{o.soLuongMatHang || o.items?.length || 1} món</td>
                     <td>
-                      <strong className={styles.totalPrice}>{formatVND(o.tongTien)}</strong>
+                      <strong className={styles.totalPrice}>
+                        {formatVND(o.tongTienSauGiamGia || o.tongTien)}
+                      </strong>
+                      {o.tienGiamGia > 0 && (
+                        <div style={{ fontSize: 11, color: '#059669', fontWeight: 500 }}>
+                          (Giảm {formatVND(o.tienGiamGia)})
+                        </div>
+                      )}
                     </td>
                     <td>{formatPaymentMethod(o.phuongThucTT)}</td>
                     <td>{getStatusBadge(o.trangThai)}</td>
@@ -291,8 +298,16 @@ export const OrdersContainer = () => {
 
                 {/* Tổng thanh toán */}
                 <div className={styles.invoiceTotal}>
+                  {selectedOrder.tienGiamGia > 0 && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13, color: '#059669' }}>
+                      <span>Voucher giảm giá:</span>
+                      <strong>-{formatVND(selectedOrder.tienGiamGia)}</strong>
+                    </div>
+                  )}
                   <span>Tổng tiền thanh toán ({formatPaymentMethod(selectedOrder.phuongThucTT)}):</span>
-                  <strong className={styles.grandTotal}>{formatVND(selectedOrder.tongTien)}</strong>
+                  <strong className={styles.grandTotal}>
+                    {formatVND(selectedOrder.tongTienSauGiamGia || selectedOrder.tongTien)}
+                  </strong>
                 </div>
               </div>
             </div>

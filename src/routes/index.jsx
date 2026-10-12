@@ -110,6 +110,14 @@ export const AppRoutes = () => {
           </ProtectedRoute>
         }
       />
+      <Route
+        path={PATHS.ADMIN.REVIEWS}
+        element={
+          <ProtectedRoute requiredUserType="EMPLOYEE">
+            <AdminContainer />
+          </ProtectedRoute>
+        }
+      />
 
       {/* Điều hướng mặc định nếu route không tồn tại */}
       <Route path="*" element={<Navigate to={PATHS.HOME} replace />} />
