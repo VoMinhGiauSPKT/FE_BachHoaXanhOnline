@@ -31,7 +31,6 @@ export const EmployeeTable = ({
       render: (_, r) => (
         <div>
           <div style={{ fontWeight: 600 }}>{r.fullName || r.tenND || r.hoTen}</div>
-          <Text type="secondary" style={{ fontSize: 12 }}>@{r.username}</Text>
         </div>
       )
     },
