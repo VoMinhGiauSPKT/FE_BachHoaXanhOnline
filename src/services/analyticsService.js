@@ -4,15 +4,16 @@ import { API_ENDPOINTS } from '../constants/apiEndpoints';
 export const analyticsService = {
   /**
    * Lấy tổng quan các chỉ số KPI báo cáo tài chính & kho
+   * @param {{ period?: 'today' | 'week' | 'month' | 'year' }} params
    * @returns {Promise<any>}
    */
-  getOverview: async () => {
-    return await apiClient.get(API_ENDPOINTS.ANALYTICS.OVERVIEW);
+  getOverview: async (params = {}) => {
+    return await apiClient.get(API_ENDPOINTS.ANALYTICS.OVERVIEW, { params });
   },
 
   /**
    * Lấy dữ liệu biểu đồ phân tích theo kỳ (ngày, tháng, năm)
-   * @param {{ period?: 'day' | 'month' | 'year', days?: number }} params
+   * @param {{ period?: 'today' | 'week' | 'month' | 'year', days?: number }} params
    * @returns {Promise<any>}
    */
   getChartData: async (params = {}) => {
@@ -30,10 +31,11 @@ export const analyticsService = {
   /**
    * Lấy danh sách Top sản phẩm bán chạy nhất / đóng góp doanh thu
    * @param {number} limit
+   * @param {string} period
    * @returns {Promise<any>}
    */
-  getTopProducts: async (limit = 5) => {
-    return await apiClient.get(API_ENDPOINTS.ANALYTICS.TOP_PRODUCTS, { params: { limit } });
+  getTopProducts: async (limit = 5, period = 'week') => {
+    return await apiClient.get(API_ENDPOINTS.ANALYTICS.TOP_PRODUCTS, { params: { limit, period } });
   }
 };
 

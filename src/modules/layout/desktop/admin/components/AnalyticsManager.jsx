@@ -39,20 +39,30 @@ export const AnalyticsManager = () => {
   const [expiringProducts, setExpiringProducts] = useState([]);
   const [topProducts, setTopProducts] = useState([]);
 
-  // 3. Chart controls
+  // 3. Period & Chart controls
+  const [selectedPeriod, setSelectedPeriod] = useState('week'); // 'today' | 'week' | 'month' | 'year'
   const [chartMetric, setChartMetric] = useState('PROFIT_REVENUE'); // PROFIT_REVENUE, ORDERS, VOUCHER
-  const [chartPeriod, setChartPeriod] = useState('day_7'); // day_7, day_30, month, year
   const [hoveredPoint, setHoveredPoint] = useState(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   // 4. Alert tab active key
   const [alertTabKey, setAlertTabKey] = useState('low_stock');
 
+  const getPeriodLabel = (period) => {
+    switch (period) {
+      case 'today': return 'Hôm nay';
+      case 'week': return '7 ngày qua';
+      case 'month': return 'Tháng này';
+      case 'year': return 'Năm nay';
+      default: return 'Toàn kỳ';
+    }
+  };
+
   // Load Overview Data
-  const loadOverview = useCallback(async () => {
+  const loadOverview = useCallback(async (period = selectedPeriod) => {
     setIsOverviewLoading(true);
     try {
-      const res = await analyticsService.getOverview();
+      const res = await analyticsService.getOverview({ period });
       if (res.data) {
         setOverview(res.data);
       }
@@ -61,26 +71,13 @@ export const AnalyticsManager = () => {
     } finally {
       setIsOverviewLoading(false);
     }
-  }, []);
+  }, [selectedPeriod]);
 
   // Load Chart Data
-  const loadChart = useCallback(async () => {
+  const loadChart = useCallback(async (period = selectedPeriod) => {
     setIsChartLoading(true);
     try {
-      let period = 'day';
-      let days = 7;
-      if (chartPeriod === 'day_30') {
-        period = 'day';
-        days = 30;
-      } else if (chartPeriod === 'month') {
-        period = 'month';
-        days = null;
-      } else if (chartPeriod === 'year') {
-        period = 'year';
-        days = null;
-      }
-
-      const res = await analyticsService.getChartData({ period, days });
+      const res = await analyticsService.getChartData({ period });
       if (res.data?.points) {
         setChartData(res.data.points);
       } else {
@@ -92,9 +89,9 @@ export const AnalyticsManager = () => {
     } finally {
       setIsChartLoading(false);
     }
-  }, [chartPeriod]);
+  }, [selectedPeriod]);
 
-  // Load Inventory Alerts
+  // Load Inventory Alerts (Tồn kho & Hạn dùng độc lập với kỳ lọc)
   const loadAlerts = useCallback(async () => {
     setIsAlertsLoading(true);
     try {
@@ -110,11 +107,11 @@ export const AnalyticsManager = () => {
     }
   }, []);
 
-  // Load Top Products
-  const loadTopProducts = useCallback(async () => {
+  // Load Top Products theo kỳ lọc
+  const loadTopProducts = useCallback(async (period = selectedPeriod) => {
     setIsTopProductsLoading(true);
     try {
-      const res = await analyticsService.getTopProducts(10);
+      const res = await analyticsService.getTopProducts(10, period);
       if (res.data) {
         setTopProducts(res.data);
       }
@@ -123,25 +120,26 @@ export const AnalyticsManager = () => {
     } finally {
       setIsTopProductsLoading(false);
     }
-  }, []);
+  }, [selectedPeriod]);
 
-  // Fetch all on mount
+  // Tự động tải lại dữ liệu khi đổi kỳ lọc
+  useEffect(() => {
+    loadOverview(selectedPeriod);
+    loadChart(selectedPeriod);
+    loadTopProducts(selectedPeriod);
+  }, [selectedPeriod, loadOverview, loadChart, loadTopProducts]);
+
+  useEffect(() => {
+    loadAlerts();
+  }, [loadAlerts]);
+
+  // Fetch all on refresh
   const handleRefreshAll = () => {
-    loadOverview();
-    loadChart();
+    loadOverview(selectedPeriod);
+    loadChart(selectedPeriod);
     loadAlerts();
-    loadTopProducts();
+    loadTopProducts(selectedPeriod);
   };
-
-  useEffect(() => {
-    loadOverview();
-    loadAlerts();
-    loadTopProducts();
-  }, [loadOverview, loadAlerts, loadTopProducts]);
-
-  useEffect(() => {
-    loadChart();
-  }, [loadChart]);
 
   // SVG Chart Computations
   const chartMetricsComputed = useMemo(() => {
@@ -155,7 +153,7 @@ export const AnalyticsManager = () => {
         const rev = Number(p.revenue) || 0;
         const prof = Number(p.profit) || 0;
         if (rev > maxVal) maxVal = rev;
-        if (prof < minVal) minVal = prof;
+        if (Math.abs(prof) > maxVal) maxVal = Math.abs(prof);
       });
       // Đảm bảo có headroom cho đồ thị
       maxVal = maxVal > 0 ? maxVal * 1.15 : 100000;
@@ -379,6 +377,17 @@ export const AnalyticsManager = () => {
         </div>
 
         <div className={styles.actionsBlock}>
+          <Radio.Group
+            value={selectedPeriod}
+            onChange={(e) => setSelectedPeriod(e.target.value)}
+            buttonStyle="solid"
+          >
+            <Radio.Button value="today">Hôm nay (24h)</Radio.Button>
+            <Radio.Button value="week">7 ngày qua</Radio.Button>
+            <Radio.Button value="month">Tháng này</Radio.Button>
+            <Radio.Button value="year">Năm nay</Radio.Button>
+          </Radio.Group>
+
           <Button
             type="primary"
             icon={<ReloadOutlined spin={isOverviewLoading || isChartLoading} />}
@@ -395,7 +404,7 @@ export const AnalyticsManager = () => {
         {/* Doanh thu thuần */}
         <div className={`${styles.kpiCard} ${styles.kpiRevenue}`}>
           <div className={styles.cardTop}>
-            <span className={styles.cardLabel}>Doanh Thu Thuần</span>
+            <span className={styles.cardLabel}>Doanh Thu Thuần • {getPeriodLabel(selectedPeriod)}</span>
             <div className={styles.cardIcon}><DollarOutlined /></div>
           </div>
           <div className={styles.mainValue}>
@@ -415,7 +424,7 @@ export const AnalyticsManager = () => {
         <div className={`${styles.kpiCard} ${overview && Number(overview.totalNetProfit) < 0 ? styles.kpiProfitNegative : styles.kpiProfit}`}>
           <div className={styles.cardTop}>
             <span className={styles.cardLabel}>
-              Lãi Thuần Thực Tế
+              Lãi Thuần Thực Tế • {getPeriodLabel(selectedPeriod)}
               <Tooltip title="Lãi thuần = Doanh thu thực nhận - Giá vốn hàng bán (COGS). Đã khấu trừ trực tiếp các khoản voucher giảm giá!">
                 <span style={{ cursor: 'pointer', marginLeft: 4 }}>ℹ️</span>
               </Tooltip>
@@ -438,7 +447,7 @@ export const AnalyticsManager = () => {
         {/* Đơn hàng & Voucher */}
         <div className={`${styles.kpiCard} ${styles.kpiOrders}`}>
           <div className={styles.cardTop}>
-            <span className={styles.cardLabel}>Đơn Hàng & Voucher</span>
+            <span className={styles.cardLabel}>Đơn Hàng & Voucher • {getPeriodLabel(selectedPeriod)}</span>
             <div className={styles.cardIcon}><ShoppingOutlined /></div>
           </div>
           <div className={styles.mainValue}>
@@ -528,14 +537,14 @@ export const AnalyticsManager = () => {
             />
 
             <Radio.Group
-              value={chartPeriod}
-              onChange={(e) => setChartPeriod(e.target.value)}
+              value={selectedPeriod}
+              onChange={(e) => setSelectedPeriod(e.target.value)}
               buttonStyle="solid"
             >
-              <Radio.Button value="day_7">7 ngày</Radio.Button>
-              <Radio.Button value="day_30">30 ngày</Radio.Button>
-              <Radio.Button value="month">12 tháng</Radio.Button>
-              <Radio.Button value="year">Theo năm</Radio.Button>
+              <Radio.Button value="today">Hôm nay (24h)</Radio.Button>
+              <Radio.Button value="week">7 ngày qua</Radio.Button>
+              <Radio.Button value="month">Tháng này</Radio.Button>
+              <Radio.Button value="year">Năm nay</Radio.Button>
             </Radio.Group>
           </div>
         </div>
@@ -599,7 +608,8 @@ export const AnalyticsManager = () => {
                   const numPoints = chartData.length;
                   const stepX = innerWidth / numPoints;
                   const xCenter = paddingLeft + idx * stepX + stepX / 2;
-                  const barWidth = Math.max(8, Math.min(28, stepX * 0.35));
+                  const barWidth = Math.max(6, Math.min(26, stepX * 0.35));
+                  const shouldShowLabel = numPoints <= 14 || (idx % Math.ceil(numPoints / 10) === 0 || idx === numPoints - 1);
 
                   if (chartMetric === 'PROFIT_REVENUE') {
                     const rev = Number(pt.revenue) || 0;
@@ -609,9 +619,10 @@ export const AnalyticsManager = () => {
                     const revHeight = Math.max(2, (rev / max) * innerHeight);
                     const revY = paddingTop + innerHeight - revHeight;
 
-                    // Profit (có thể âm)
+                    // Cột Lãi/Lỗ: Luôn đứng trên trục X (hướng lên trên cùng chiều doanh thu)
+                    // để không bao giờ bị đâm ngược xuống dưới che mất nhãn ngày tháng
                     const profHeight = Math.max(2, (Math.abs(prof) / max) * innerHeight);
-                    const profY = prof >= 0 ? paddingTop + innerHeight - profHeight : paddingTop + innerHeight;
+                    const profY = paddingTop + innerHeight - profHeight;
 
                     return (
                       <g
@@ -623,9 +634,18 @@ export const AnalyticsManager = () => {
                           setHoveredPoint(pt);
                         }}
                       >
+                        {/* Vùng cảm ứng trong suốt mở rộng theo cả cột để hover mượt mà */}
+                        <rect
+                          x={xCenter - stepX / 2}
+                          y={paddingTop}
+                          width={stepX}
+                          height={innerHeight}
+                          fill="transparent"
+                        />
+
                         {/* Revenue Bar */}
                         <rect
-                          x={xCenter - barWidth - 2}
+                          x={xCenter - barWidth - 1}
                           y={revY}
                           width={barWidth}
                           height={revHeight}
@@ -633,9 +653,9 @@ export const AnalyticsManager = () => {
                           rx={3}
                         />
 
-                        {/* Profit Bar */}
+                        {/* Profit Bar (Đỏ nếu lỗ thuần, Tím nếu lãi thuần) */}
                         <rect
-                          x={xCenter + 2}
+                          x={xCenter + 1}
                           y={profY}
                           width={barWidth}
                           height={profHeight}
@@ -643,14 +663,16 @@ export const AnalyticsManager = () => {
                           rx={3}
                         />
 
-                        {/* X-axis Label */}
-                        <text
-                          x={xCenter}
-                          y={paddingTop + innerHeight + 20}
-                          className={styles.axisText}
-                        >
-                          {pt.label}
-                        </text>
+                        {/* X-axis Label (hiển thị chọn lọc khi có nhiều điểm dữ liệu để tránh chen chúc) */}
+                        {shouldShowLabel && (
+                          <text
+                            x={xCenter}
+                            y={paddingTop + innerHeight + 20}
+                            className={styles.axisText}
+                          >
+                            {pt.label}
+                          </text>
+                        )}
                       </g>
                     );
                   } else if (chartMetric === 'ORDERS') {
@@ -674,9 +696,18 @@ export const AnalyticsManager = () => {
                           setHoveredPoint(pt);
                         }}
                       >
+                        {/* Vùng cảm ứng trong suốt */}
+                        <rect
+                          x={xCenter - stepX / 2}
+                          y={paddingTop}
+                          width={stepX}
+                          height={innerHeight}
+                          fill="transparent"
+                        />
+
                         {/* Success Orders */}
                         <rect
-                          x={xCenter - barWidth - 2}
+                          x={xCenter - barWidth - 1}
                           y={ordY}
                           width={barWidth}
                           height={ordHeight}
@@ -686,7 +717,7 @@ export const AnalyticsManager = () => {
 
                         {/* Cancelled Orders */}
                         <rect
-                          x={xCenter + 2}
+                          x={xCenter + 1}
                           y={canY}
                           width={barWidth}
                           height={canHeight}
@@ -695,13 +726,15 @@ export const AnalyticsManager = () => {
                         />
 
                         {/* X-axis Label */}
-                        <text
-                          x={xCenter}
-                          y={paddingTop + innerHeight + 20}
-                          className={styles.axisText}
-                        >
-                          {pt.label}
-                        </text>
+                        {shouldShowLabel && (
+                          <text
+                            x={xCenter}
+                            y={paddingTop + innerHeight + 20}
+                            className={styles.axisText}
+                          >
+                            {pt.label}
+                          </text>
+                        )}
                       </g>
                     );
                   } else {
@@ -723,6 +756,15 @@ export const AnalyticsManager = () => {
                           setHoveredPoint(pt);
                         }}
                       >
+                        {/* Vùng cảm ứng trong suốt */}
+                        <rect
+                          x={xCenter - stepX / 2}
+                          y={paddingTop}
+                          width={stepX}
+                          height={innerHeight}
+                          fill="transparent"
+                        />
+
                         {/* Voucher Discount Amount */}
                         <rect
                           x={xCenter - barWidth / 2}
@@ -734,13 +776,15 @@ export const AnalyticsManager = () => {
                         />
 
                         {/* X-axis Label */}
-                        <text
-                          x={xCenter}
-                          y={paddingTop + innerHeight + 20}
-                          className={styles.axisText}
-                        >
-                          {pt.label}
-                        </text>
+                        {shouldShowLabel && (
+                          <text
+                            x={xCenter}
+                            y={paddingTop + innerHeight + 20}
+                            className={styles.axisText}
+                          >
+                            {pt.label}
+                          </text>
+                        )}
                       </g>
                     );
                   }
@@ -757,7 +801,13 @@ export const AnalyticsManager = () => {
                     position: 'fixed'
                   }}
                 >
-                  <div className={styles.tooltipHeader}>Kỳ: {hoveredPoint.label} ({hoveredPoint.dateKey})</div>
+                  <div className={styles.tooltipHeader}>
+                    {hoveredPoint.dateKey && hoveredPoint.dateKey.startsWith('Khung')
+                      ? `${hoveredPoint.dateKey} (Hôm nay)`
+                      : hoveredPoint.dateKey && hoveredPoint.dateKey.startsWith('Tháng')
+                      ? hoveredPoint.dateKey
+                      : `${hoveredPoint.label} (${hoveredPoint.dateKey})`}
+                  </div>
                   {chartMetric === 'PROFIT_REVENUE' && (
                     <>
                       <div className={styles.tooltipRow}>
@@ -769,7 +819,7 @@ export const AnalyticsManager = () => {
                         <span className={styles.rowVal}>{formatVND(hoveredPoint.cogs)}</span>
                       </div>
                       <div className={styles.tooltipRow}>
-                        <span className={styles.rowKey}>Lãi thuần:</span>
+                        <span className={styles.rowKey}>{Number(hoveredPoint.profit) >= 0 ? 'Lãi thuần:' : 'Lỗ thuần:'}</span>
                         <span className={styles.rowVal} style={{ color: Number(hoveredPoint.profit) >= 0 ? '#818cf8' : '#f87171' }}>
                           {formatVND(hoveredPoint.profit)}
                         </span>
@@ -901,7 +951,7 @@ export const AnalyticsManager = () => {
               <RiseOutlined style={{ color: '#10b981' }} />
               Top Sản Phẩm Doanh Thu & Lợi Nhuận
             </h3>
-            <span style={{ fontSize: 12, color: '#64748b' }}>Đóng góp cao nhất</span>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Đóng góp cao nhất ({getPeriodLabel(selectedPeriod)})</span>
           </div>
 
           <Table
