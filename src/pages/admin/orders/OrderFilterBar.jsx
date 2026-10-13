@@ -30,11 +30,9 @@ export const OrderFilterBar = ({
           style={{ width: 190 }}
           allowClear
         >
-          {Object.entries(ORDER_STATUS_LABELS).map(([key, label]) => (
-            <Select.Option key={key} value={key}>
-              {label}
-            </Select.Option>
-          ))}
+          <Select.Option value="CHUATHANHTOAN">Chưa Thanh Toán</Select.Option>
+          <Select.Option value="DATHANHTOAN">Đã Thanh Toán</Select.Option>
+          <Select.Option value="DAHUY">Đã Hủy</Select.Option>
         </Select>
 
         <Button onClick={onReset}>Xóa lọc</Button>

@@ -47,7 +47,7 @@ export const AdminOrdersPage = () => {
   const handleConfirmCod = async (id) => {
     const res = await confirmCod(id);
     if (res.success) {
-      message.success('Đã xác nhận thu tiền đơn COD!');
+      message.success('Xác nhận thanh toán đơn hàng thành công!');
     } else {
       message.error(res.error || 'Thao tác thất bại');
     }
