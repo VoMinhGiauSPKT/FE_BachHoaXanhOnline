@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Layout, Menu, Button, Avatar, Tag, Space, Dropdown } from 'antd';
 import {
-  BarChartOutlined,
   AppstoreOutlined,
   FolderOutlined,
   ShopOutlined,
@@ -28,11 +27,6 @@ export const AdminLayout = ({ children }) => {
   const isAdmin = user?.position === 'ADMIN';
 
   const menuItems = [
-    {
-      key: PATHS.ADMIN.ANALYTICS,
-      icon: <BarChartOutlined />,
-      label: 'Báo cáo & Thống kê'
-    },
     {
       key: PATHS.ADMIN.PRODUCTS,
       icon: <AppstoreOutlined />,

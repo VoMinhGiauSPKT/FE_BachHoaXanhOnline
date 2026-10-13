@@ -25,8 +25,7 @@ export const PATHS = {
     ORDERS: '/admin/orders',
     PROMOTIONS: '/admin/promotions',
     EMPLOYEES: '/admin/employees',
-    REVIEWS: '/admin/reviews',
-    ANALYTICS: '/admin/analytics'
+    REVIEWS: '/admin/reviews'
   }
 };
 

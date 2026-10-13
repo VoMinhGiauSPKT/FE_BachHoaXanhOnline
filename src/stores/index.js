@@ -8,5 +8,4 @@ export { useOrderStore } from './useOrderStore';
 export { usePromotionStore } from './usePromotionStore';
 export { useEmployeeStore } from './useEmployeeStore';
 export { useReviewStore } from './useReviewStore';
-export { useAnalyticsStore } from './useAnalyticsStore';
 export { useAddressStore } from './useAddressStore';

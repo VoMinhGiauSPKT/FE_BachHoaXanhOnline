@@ -1,7 +1,6 @@
 import React from 'react';
 import { useLocation } from 'react-router-dom';
 import AdminLayout from '../../layouts/AdminLayout';
-import AdminAnalyticsPage from './analytics';
 import AdminProductsPage from './products';
 import AdminCategoriesPage from './categories';
 import AdminSuppliersPage from './suppliers';
@@ -15,7 +14,6 @@ export const AdminPage = () => {
   const path = location.pathname;
 
   const renderContent = () => {
-    if (path.includes('/admin/analytics')) return <AdminAnalyticsPage />;
     if (path.includes('/admin/products')) return <AdminProductsPage />;
     if (path.includes('/admin/categories')) return <AdminCategoriesPage />;
     if (path.includes('/admin/suppliers')) return <AdminSuppliersPage />;
