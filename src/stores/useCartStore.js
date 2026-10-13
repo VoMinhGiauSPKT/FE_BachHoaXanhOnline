@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import cartService from '../services/cartService';
 import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export const useCartStore = create(
   persist(
