@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useLocation } from 'react-router-dom';
 import { Card, Tabs, Form, Input, Button, Alert, message } from 'antd';
 import { UserOutlined, LockOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
 import MainLayout from '../../../layouts/MainLayout';
@@ -10,8 +10,9 @@ import styles from './Auth.module.scss';
 
 export const AuthPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
-  const redirectPath = searchParams.get('redirect') || PATHS.HOME;
+  const redirectPath = searchParams.get('redirect') || location.state?.from || PATHS.HOME;
 
   const { login, register, isLoading, error, clearError } = useAuthStore();
   const { fetchCart } = useCartStore();

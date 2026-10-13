@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Card, Tag, Rate, Button, message } from 'antd';
 import { PlusOutlined, CheckOutlined } from '@ant-design/icons';
 import { formatVND } from '../../utils/formatCurrency';
 import useCartStore from '../../stores/useCartStore';
+import useAuthStore from '../../stores/useAuthStore';
+import { PATHS } from '../../constants/paths';
 import { PRODUCT_UNIT_LABELS } from '../../constants/enums';
 import styles from './ProductCard.module.scss';
 
 export const ProductCard = ({ product }) => {
   const { addToCart } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [isAdding, setIsAdding] = useState(false);
 
   const productId = product.productId || product.id;
@@ -29,6 +34,15 @@ export const ProductCard = ({ product }) => {
   const handleAddClick = async (e) => {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!isAuthenticated) {
+      message.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+      navigate(`${PATHS.LOGIN}?redirect=${encodeURIComponent(location.pathname + location.search)}`, {
+        state: { from: location.pathname }
+      });
+      return;
+    }
+
     if (isOutOfStock) {
       message.warning(`Sản phẩm "${name}" hiện đã hết hàng!`);
       return;
@@ -51,7 +65,7 @@ export const ProductCard = ({ product }) => {
             ) : isLowStock ? (
               <Tag color="warning">Chỉ còn {stock} {displayUnit.toLowerCase()}</Tag>
             ) : (
-              <Tag color="success">Mới</Tag>
+              <Tag color="success">Tươi sạch</Tag>
             )}
           </div>
           {imageUrl && imageUrl.startsWith('http') ? (

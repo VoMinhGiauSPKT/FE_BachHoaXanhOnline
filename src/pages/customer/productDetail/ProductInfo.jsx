@@ -1,13 +1,19 @@
 import React, { useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Image, Tag, Rate, InputNumber, Button, message } from 'antd';
 import { ShoppingCartOutlined, CheckOutlined } from '@ant-design/icons';
 import { formatVND } from '../../../utils/formatCurrency';
 import { PRODUCT_UNIT_LABELS } from '../../../constants/enums';
 import useCartStore from '../../../stores/useCartStore';
+import useAuthStore from '../../../stores/useAuthStore';
+import { PATHS } from '../../../constants/paths';
 import styles from './ProductInfo.module.scss';
 
 export const ProductInfo = ({ product }) => {
   const { addToCart } = useCartStore();
+  const { isAuthenticated } = useAuthStore();
+  const navigate = useNavigate();
+  const location = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [isAdding, setIsAdding] = useState(false);
 
@@ -23,6 +29,14 @@ export const ProductInfo = ({ product }) => {
   const isOutOfStock = stock <= 0;
 
   const handleAddToCart = async () => {
+    if (!isAuthenticated) {
+      message.warning('Vui lòng đăng nhập để thêm sản phẩm vào giỏ hàng!');
+      navigate(`${PATHS.LOGIN}?redirect=${encodeURIComponent(location.pathname + location.search)}`, {
+        state: { from: location.pathname }
+      });
+      return;
+    }
+
     if (isOutOfStock) {
       message.warning('Sản phẩm đã hết hàng!');
       return;
