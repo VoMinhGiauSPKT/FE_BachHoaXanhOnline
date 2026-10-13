@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, Table, Tag, Button, message, Empty, Space, Popconfirm } from 'antd';
 import { EyeOutlined, ReloadOutlined, QrcodeOutlined, DollarOutlined } from '@ant-design/icons';
 import MainLayout from '../../../layouts/MainLayout';
-import VietQRModal from '../../../components/VietQRModal';
 import { useOrderStore } from '../../../stores/useOrderStore';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
@@ -34,14 +34,31 @@ const getStatusColor = (status) => {
 };
 
 export const CustomerOrdersPage = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const { orders, isLoading, fetchOrders, fetchOrderById, createPayment, changePaymentMethod, refresh } = useOrderStore();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
-  const [vietQrPaymentData, setVietQrPaymentData] = useState(null);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  // Bắt kết quả redirect từ cổng PayOS (sau khi thanh toán thành công hoặc huỷ giao dịch)
+  useEffect(() => {
+    const status = searchParams.get('status');
+    const code = searchParams.get('code');
+    const cancel = searchParams.get('cancel');
+
+    if (status === 'PAID' || code === '00') {
+      message.success('Thanh toán đơn hàng qua PayOS thành công!');
+      fetchOrders();
+      setSearchParams({}, { replace: true });
+    } else if (cancel === 'true') {
+      message.warning('Bạn đã huỷ giao dịch thanh toán PayOS.');
+      fetchOrders();
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams, fetchOrders]);
 
   const handleViewDetail = async (record) => {
     const id = record.orderId || record.maDonHang || record.id;
@@ -60,12 +77,16 @@ export const CustomerOrdersPage = () => {
 
   const handlePayAgain = async (record) => {
     const id = record.orderId || record.maDonHang || record.id;
-    const hide = message.loading('Đang khởi tạo mã VietQR...', 0);
+    const hide = message.loading('Đang khởi tạo liên kết thanh toán PayOS...', 0);
     try {
       const res = await createPayment(id);
       hide();
-      if (res.success) {
-        setVietQrPaymentData(res.data?.data || res.data);
+      const payData = res?.data?.data || res?.data;
+      const checkoutUrl = payData?.checkoutUrl || (typeof payData === 'string' ? payData : null);
+
+      if (res.success && checkoutUrl) {
+        message.loading('Đang chuyển hướng sang cổng thanh toán PayOS...', 1.5);
+        window.location.href = checkoutUrl;
       } else {
         message.error(res.error || 'Không thể tạo liên kết thanh toán');
       }
@@ -204,21 +225,6 @@ export const CustomerOrdersPage = () => {
             onCancel={() => setDetailOpen(false)}
             onPayAgain={handlePayAgain}
             onChangePaymentMethod={handleChangePayment}
-          />
-        )}
-
-        {vietQrPaymentData && (
-          <VietQRModal
-            paymentData={vietQrPaymentData}
-            onPaymentSuccess={() => {
-              setVietQrPaymentData(null);
-              message.success('Giao dịch hoàn tất! Cảm ơn bạn.');
-              refresh();
-            }}
-            onClose={() => {
-              setVietQrPaymentData(null);
-              refresh();
-            }}
           />
         )}
       </div>

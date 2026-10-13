@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Form, Row, Col, Steps, message } from 'antd';
 import MainLayout from '../../../layouts/MainLayout';
-import VietQRModal from '../../../components/VietQRModal';
 import useCartStore from '../../../stores/useCartStore';
 import useAuthStore from '../../../stores/useAuthStore';
 import { useOrderStore } from '../../../stores/useOrderStore';
@@ -15,6 +14,7 @@ import styles from './Checkout.module.scss';
 
 export const CheckoutPage = () => {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [form] = Form.useForm();
   const { user } = useAuthStore();
   const { items, totalAmount, clearCart } = useCartStore();
@@ -26,8 +26,14 @@ export const CheckoutPage = () => {
   const [selectedPromo, setSelectedPromo] = useState(null);
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [vietQrPaymentData, setVietQrPaymentData] = useState(null);
   const [createdOrder, setCreatedOrder] = useState(null);
+
+  useEffect(() => {
+    if (searchParams.get('cancel') === 'true') {
+      message.warning('Bạn đã huỷ giao dịch thanh toán PayOS.');
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   useEffect(() => {
     if (items.length === 0 && !createdOrder) {
@@ -121,11 +127,15 @@ export const CheckoutPage = () => {
         if (paymentMethod === 'VIETQR') {
           try {
             const payRes = await createPayment(orderId);
-            if (payRes.success) {
-              const payData = payRes.data?.data || payRes.data;
-              setVietQrPaymentData(payData);
+            const payData = payRes?.data?.data || payRes?.data;
+            const checkoutUrl = payData?.checkoutUrl || (typeof payData === 'string' ? payData : null);
+
+            if (payRes.success && checkoutUrl) {
+              message.loading('Đang chuyển hướng sang cổng thanh toán PayOS...', 1.5);
+              window.location.href = checkoutUrl;
+              return;
             } else {
-              message.warning('Chưa tạo được liên kết VietQR. Quý khách có thể thanh toán tại Đơn hàng của tôi.');
+              message.warning('Chưa tạo được liên kết PayOS. Quý khách có thể thanh toán tại Đơn hàng của tôi.');
               navigate(PATHS.ORDERS);
             }
           } catch {
@@ -187,20 +197,6 @@ export const CheckoutPage = () => {
             />
           </Col>
         </Row>
-
-        {vietQrPaymentData && (
-          <VietQRModal
-            paymentData={vietQrPaymentData}
-            onPaymentSuccess={() => {
-              setVietQrPaymentData(null);
-              navigate(PATHS.ORDERS);
-            }}
-            onClose={() => {
-              setVietQrPaymentData(null);
-              navigate(PATHS.ORDERS);
-            }}
-          />
-        )}
       </div>
     </MainLayout>
   );
