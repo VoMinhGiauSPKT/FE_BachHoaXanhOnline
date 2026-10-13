@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import productService from '../services/productService';
-import { MOCK_PRODUCTS } from '../constants/mockData';
 
 export const useProductStore = create((set, get) => ({
   products: [],
@@ -45,22 +44,35 @@ export const useProductStore = create((set, get) => ({
 
     try {
       const res = await productService.getProducts(params);
-      const data = res.data;
-      if (Array.isArray(data)) {
-        set({ products: data, total: data.length, isLoading: false });
-      } else if (data && Array.isArray(data.items)) {
-        set({ products: data.items, total: data.total || data.items.length, isLoading: false });
-      } else if (data && Array.isArray(data.data)) {
-        set({ products: data.data, total: data.total || data.data.length, isLoading: false });
-      } else {
-        set({ products: MOCK_PRODUCTS || [], total: (MOCK_PRODUCTS || []).length, isLoading: false });
+      const data = res?.data || res;
+      let productList = [];
+      let totalCount = 0;
+
+      if (data?.products && Array.isArray(data.products)) {
+        productList = data.products;
+        totalCount = data.total ?? data.products.length;
+      } else if (data?.items && Array.isArray(data.items)) {
+        productList = data.items;
+        totalCount = data.total ?? data.items.length;
+      } else if (Array.isArray(data)) {
+        productList = data;
+        totalCount = data.length;
+      } else if (data?.data && Array.isArray(data.data)) {
+        productList = data.data;
+        totalCount = data.total ?? data.data.length;
       }
-    } catch (err) {
-      console.warn('API getProducts fallback:', err?.message);
+
       set({
-        products: MOCK_PRODUCTS || [],
-        total: (MOCK_PRODUCTS || []).length,
-        error: err?.message,
+        products: productList,
+        total: totalCount,
+        isLoading: false
+      });
+    } catch (err) {
+      console.error('Lỗi khi tải danh sách sản phẩm từ API:', err);
+      set({
+        products: [],
+        total: 0,
+        error: err?.message || 'Không thể tải danh sách sản phẩm',
         isLoading: false
       });
     }
@@ -70,13 +82,13 @@ export const useProductStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await productService.getProductById(id);
-      const product = res.data?.data || res.data;
+      const product = res?.data?.data || res?.data || res;
       set({ currentProduct: product, isLoading: false });
       return product;
     } catch (err) {
-      const fallback = (MOCK_PRODUCTS || []).find((p) => p.productId === id || p.id === id) || null;
-      set({ currentProduct: fallback, error: err?.message, isLoading: false });
-      return fallback;
+      console.error('Lỗi khi tải chi tiết sản phẩm từ API:', err);
+      set({ currentProduct: null, error: err?.message, isLoading: false });
+      return null;
     }
   },
 

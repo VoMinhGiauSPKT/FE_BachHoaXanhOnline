@@ -42,18 +42,31 @@ export const useEmployeeStore = create((set, get) => ({
 
     try {
       const res = await employeeService.getEmployees(params);
-      const data = res.data;
-      if (Array.isArray(data)) {
-        set({ employees: data, total: data.length, isLoading: false });
+      const data = res?.data || res;
+      let employeeList = [];
+      let totalCount = 0;
+
+      if (data?.employees && Array.isArray(data.employees)) {
+        employeeList = data.employees;
+        totalCount = data.total ?? data.employees.length;
       } else if (data?.items && Array.isArray(data.items)) {
-        set({ employees: data.items, total: data.total || data.items.length, isLoading: false });
+        employeeList = data.items;
+        totalCount = data.total ?? data.items.length;
+      } else if (Array.isArray(data)) {
+        employeeList = data;
+        totalCount = data.length;
       } else if (data?.data && Array.isArray(data.data)) {
-        set({ employees: data.data, total: data.total || data.data.length, isLoading: false });
-      } else {
-        set({ employees: [], total: 0, isLoading: false });
+        employeeList = data.data;
+        totalCount = data.total ?? data.data.length;
       }
+
+      set({
+        employees: employeeList,
+        total: totalCount,
+        isLoading: false
+      });
     } catch (err) {
-      set({ error: err?.message, isLoading: false });
+      set({ employees: [], total: 0, error: err?.message, isLoading: false });
     }
   },
 

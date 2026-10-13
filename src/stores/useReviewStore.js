@@ -13,8 +13,8 @@ export const useReviewStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await reviewService.getProductReviews(productId, params);
-      const data = res.data;
-      const list = Array.isArray(data) ? data : (data?.data || data?.items || []);
+      const data = res?.data || res;
+      const list = Array.isArray(data) ? data : (data?.reviews || data?.data || data?.items || []);
       set({ reviews: list, isLoading: false });
       return list;
     } catch (err) {
@@ -27,8 +27,8 @@ export const useReviewStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await reviewService.getMyReviews(params);
-      const data = res.data;
-      const list = Array.isArray(data) ? data : (data?.data || data?.items || []);
+      const data = res?.data || res;
+      const list = Array.isArray(data) ? data : (data?.reviews || data?.data || data?.items || []);
       set({ myReviews: list, isLoading: false });
       return list;
     } catch (err) {
@@ -41,8 +41,8 @@ export const useReviewStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await reviewService.getAllReviewsForModeration(params);
-      const data = res.data;
-      const list = Array.isArray(data) ? data : (data?.data || data?.items || []);
+      const data = res?.data || res;
+      const list = Array.isArray(data) ? data : (data?.reviews || data?.data || data?.items || []);
       set({ moderationReviews: list, total: list.length, isLoading: false });
     } catch (err) {
       set({ error: err?.message, isLoading: false });

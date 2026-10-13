@@ -1,6 +1,5 @@
 import { create } from 'zustand';
 import categoryService from '../services/categoryService';
-import { MOCK_CATEGORIES } from '../constants/mockData';
 
 export const useCategoryStore = create((set, get) => ({
   categories: [],
@@ -12,17 +11,21 @@ export const useCategoryStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await categoryService.getCategories();
-      const data = res.data;
-      if (Array.isArray(data) && data.length > 0) {
-        set({ categories: data, isLoading: false });
-      } else if (data?.data && Array.isArray(data.data) && data.data.length > 0) {
-        set({ categories: data.data, isLoading: false });
-      } else {
-        set({ categories: MOCK_CATEGORIES, isLoading: false });
+      const data = res?.data || res;
+      let categoryList = [];
+
+      if (Array.isArray(data)) {
+        categoryList = data;
+      } else if (data?.categories && Array.isArray(data.categories)) {
+        categoryList = data.categories;
+      } else if (data?.data && Array.isArray(data.data)) {
+        categoryList = data.data;
       }
+
+      set({ categories: categoryList, isLoading: false });
     } catch (err) {
-      console.warn('API getCategories fallback:', err?.message);
-      set({ categories: MOCK_CATEGORIES, error: err?.message, isLoading: false });
+      console.error('Lỗi khi tải danh mục sản phẩm từ API:', err);
+      set({ categories: [], error: err?.message, isLoading: false });
     }
   },
 

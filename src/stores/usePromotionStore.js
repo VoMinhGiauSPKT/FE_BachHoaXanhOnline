@@ -11,8 +11,8 @@ export const usePromotionStore = create((set, get) => ({
     set({ isLoading: true, error: null });
     try {
       const res = await promotionService.getPromotions(params);
-      const data = res.data;
-      const list = Array.isArray(data) ? data : (data?.data || data?.items || []);
+      const data = res?.data || res;
+      const list = Array.isArray(data) ? data : (data?.promotions || data?.items || data?.data || []);
       set({ promotions: list, isLoading: false });
     } catch (err) {
       set({ error: err?.message, isLoading: false });
