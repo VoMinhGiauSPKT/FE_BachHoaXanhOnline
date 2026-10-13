@@ -1,0 +1,19 @@
+.loadingWrap {
+  min-height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emptyWrap {
+  padding: 60px 0;
+  text-align: center;
+  background: #ffffff;
+  border-radius: 12px;
+}
+
+.paginationWrap {
+  margin-top: 32px;
+  display: flex;
+  justify-content: center;
+}

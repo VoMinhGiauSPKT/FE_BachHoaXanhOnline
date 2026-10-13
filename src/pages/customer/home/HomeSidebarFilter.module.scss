@@ -1,0 +1,39 @@
+.filterCard {
+  border-radius: 10px;
+  position: sticky;
+  top: 80px;
+}
+
+.filterSection {
+  display: flex;
+  flex-direction: column;
+}
+
+.filterTitle {
+  font-size: 13px;
+  font-weight: 700;
+  color: #334155;
+  margin-bottom: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.radioGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.radioItem {
+  font-size: 14px;
+  color: #475569;
+}
+
+.stockToggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #475569;
+  font-weight: 500;
+}

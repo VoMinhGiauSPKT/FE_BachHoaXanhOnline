@@ -1,0 +1,63 @@
+.adminLayout {
+  min-height: 100vh;
+}
+
+.sider {
+  background: #001529;
+  box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  z-index: 100;
+}
+
+.siderLogo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 16px;
+  background: #002140;
+  color: #ffffff;
+  overflow: hidden;
+}
+
+.logoIcon {
+  font-size: 24px;
+}
+
+.logoTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: #10b981;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+}
+
+.adminHeader {
+  height: 64px;
+  padding: 0 24px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 1px 4px rgba(0, 21, 41, 0.08);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+}
+
+.headerTitle {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.headerRight {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.adminContent {
+  padding: 24px;
+  background: #f1f5f9;
+  min-height: calc(100vh - 64px);
+}

@@ -1,0 +1,37 @@
+.authContainer {
+  min-height: calc(100vh - 200px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 16px;
+}
+
+.authCard {
+  width: 100%;
+  max-width: 460px;
+  border-radius: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.brandHeader {
+  text-align: center;
+  margin-bottom: 20px;
+
+  .logo {
+    font-size: 36px;
+    margin-bottom: 8px;
+  }
+
+  h2 {
+    font-size: 20px;
+    font-weight: 800;
+    color: #008848;
+    margin: 0;
+  }
+
+  p {
+    font-size: 13px;
+    color: #64748b;
+    margin: 4px 0 0;
+  }
+}

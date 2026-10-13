@@ -3,7 +3,6 @@ import { persist } from 'zustand/middleware';
 import cartService from '../services/cartService';
 import useAuthStore from './useAuthStore';
 import useToastStore from './useToastStore';
-import { STORAGE_KEYS } from '../constants/storageKeys';
 
 export const useCartStore = create(
   persist(
@@ -23,8 +22,8 @@ export const useCartStore = create(
        * Đồng bộ lại số lượng và tổng tiền từ items cục bộ
        */
       recalculateGuestTotals: (items) => {
-        const totalItems = items.reduce((sum, item) => sum + (item.quantity || 1), 0);
-        const totalAmount = items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0);
+        const totalItems = items.length;
+        const totalAmount = Math.round(items.reduce((sum, item) => sum + ((item.price || 0) * (item.quantity || 1)), 0));
         return { items, totalItems, totalAmount };
       },
 
@@ -58,13 +57,14 @@ export const useCartStore = create(
        * Thêm sản phẩm vào giỏ hàng
        */
       addToCart: async (product, quantity = 1) => {
+        const cleanQty = Math.max(1, Math.floor(Number(quantity)) || 1);
         const { isAuthenticated, userType } = useAuthStore.getState();
         const toast = useToastStore.getState().addToast;
 
         if (isAuthenticated && userType === 'CUSTOMER') {
           set({ isLoading: true });
           try {
-            await cartService.addItem({ productId: product.productId || product.id, quantity });
+            await cartService.addItem({ productId: product.productId || product.id, quantity: cleanQty });
             await get().fetchCart();
             toast({
               type: 'success',
@@ -88,11 +88,27 @@ export const useCartStore = create(
             (it) => (it.productId || it.id) === prodId
           );
 
+          const maxStock = product.stock !== undefined ? Number(product.stock) : (currentItems[existingIndex]?.availableStock ?? 99);
           if (existingIndex > -1) {
-            currentItems[existingIndex].quantity += quantity;
+            if (currentItems[existingIndex].quantity + cleanQty > maxStock) {
+              toast({
+                type: 'warning',
+                message: `Số lượng trong giỏ hàng đã đạt giới hạn tồn kho (${maxStock})!`
+              });
+              return false;
+            }
+            currentItems[existingIndex].quantity = currentItems[existingIndex].quantity + cleanQty;
+            currentItems[existingIndex].availableStock = maxStock;
             currentItems[existingIndex].itemTotal =
-              currentItems[existingIndex].quantity * (currentItems[existingIndex].price || product.price);
+              Math.round(currentItems[existingIndex].quantity * (currentItems[existingIndex].price || product.price));
           } else {
+            if (cleanQty > maxStock) {
+              toast({
+                type: 'warning',
+                message: `Số lượng yêu cầu vượt quá tồn kho hiện có (${maxStock})!`
+              });
+              return false;
+            }
             currentItems.push({
               lineItemId: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
               productId: prodId,
@@ -100,9 +116,9 @@ export const useCartStore = create(
               imageUrl: product.imageUrl || product.icon,
               unit: product.unit || 'Phần',
               price: product.price || 0,
-              quantity: quantity,
-              itemTotal: (product.price || 0) * quantity,
-              availableStock: product.stock || 99
+              quantity: cleanQty,
+              itemTotal: Math.round((product.price || 0) * cleanQty),
+              availableStock: maxStock
             });
           }
 
@@ -120,7 +136,8 @@ export const useCartStore = create(
        * Cập nhật số lượng mặt hàng
        */
       updateQuantity: async (lineItemId, newQuantity) => {
-        if (newQuantity <= 0) {
+        const cleanNewQty = Math.max(1, Math.floor(Number(newQuantity)) || 1);
+        if (cleanNewQty <= 0) {
           return get().removeItem(lineItemId);
         }
 
@@ -128,7 +145,7 @@ export const useCartStore = create(
         if (isAuthenticated && userType === 'CUSTOMER') {
           set({ isLoading: true });
           try {
-            await cartService.updateItemQuantity(lineItemId, newQuantity);
+            await cartService.updateItemQuantity(lineItemId, cleanNewQty);
             await get().fetchCart();
           } catch (err) {
             useToastStore.getState().addToast({
@@ -139,12 +156,20 @@ export const useCartStore = create(
             set({ isLoading: false });
           }
         } else {
+          const itemToUpdate = get().items.find((it) => it.lineItemId === lineItemId);
+          if (itemToUpdate && itemToUpdate.availableStock && cleanNewQty > itemToUpdate.availableStock) {
+            useToastStore.getState().addToast({
+              type: 'warning',
+              message: `Số lượng tối đa còn trong kho là ${itemToUpdate.availableStock}!`
+            });
+            return;
+          }
           const currentItems = get().items.map((it) => {
             if (it.lineItemId === lineItemId) {
               return {
                 ...it,
-                quantity: newQuantity,
-                itemTotal: it.price * newQuantity
+                quantity: cleanNewQty,
+                itemTotal: Math.round((it.price || 0) * cleanNewQty)
               };
             }
             return it;
