@@ -10,6 +10,7 @@ export const AdminSuppliersPage = () => {
     suppliers,
     isLoading,
     fetchSuppliers,
+    fetchSupplierById,
     createSupplier,
     updateSupplier,
     deleteSupplier,
@@ -23,9 +24,19 @@ export const AdminSuppliersPage = () => {
     fetchSuppliers();
   }, [fetchSuppliers]);
 
-  const handleEdit = (sup) => {
-    setEditingSupplier(sup);
-    setModalOpen(true);
+  const handleEdit = async (sup) => {
+    const id = sup.supplierId || sup.id;
+    const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
+    try {
+      const detail = await fetchSupplierById(id);
+      hide();
+      setEditingSupplier(detail || sup);
+      setModalOpen(true);
+    } catch {
+      hide();
+      setEditingSupplier(sup);
+      setModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {

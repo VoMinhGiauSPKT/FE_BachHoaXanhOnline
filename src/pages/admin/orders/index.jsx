@@ -14,6 +14,7 @@ export const AdminOrdersPage = () => {
     isLoading,
     filters,
     fetchOrders,
+    fetchOrderById,
     setFilters,
     setPage,
     confirmCod,
@@ -28,9 +29,19 @@ export const AdminOrdersPage = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  const handleViewDetail = (order) => {
-    setSelectedOrder(order);
-    setDetailOpen(true);
+  const handleViewDetail = async (order) => {
+    const id = order.orderId || order.maDonHang || order.id;
+    const hide = message.loading('Đang tải chi tiết đơn hàng...', 0);
+    try {
+      const detail = await fetchOrderById(id);
+      hide();
+      setSelectedOrder(detail || order);
+      setDetailOpen(true);
+    } catch {
+      hide();
+      setSelectedOrder(order);
+      setDetailOpen(true);
+    }
   };
 
   const handleConfirmCod = async (id) => {

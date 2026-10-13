@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Modal, Form, Input } from 'antd';
+import { Modal, Form, Input, InputNumber } from 'antd';
 
 export const CategoryFormModal = ({
   open,
@@ -16,10 +16,12 @@ export const CategoryFormModal = ({
       if (editingCategory) {
         form.setFieldsValue({
           categoryName: editingCategory.categoryName || editingCategory.name,
+          profitMargin: editingCategory.profitMargin !== undefined ? Number(editingCategory.profitMargin) : 10,
           description: editingCategory.description || ''
         });
       } else {
         form.resetFields();
+        form.setFieldsValue({ profitMargin: 10 });
       }
     }
   }, [open, editingCategory, form]);
@@ -27,7 +29,11 @@ export const CategoryFormModal = ({
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      await onSubmit(values);
+      await onSubmit({
+        categoryName: values.categoryName?.trim(),
+        profitMargin: Number(values.profitMargin || 0),
+        description: values.description?.trim() || ''
+      });
     } catch (err) {
       // Validate error
     }
@@ -51,6 +57,15 @@ export const CategoryFormModal = ({
           rules={[{ required: true, message: 'Vui lòng nhập tên danh mục' }]}
         >
           <Input placeholder="Ví dụ: Rau củ & Trái cây" />
+        </Form.Item>
+
+        <Form.Item
+          name="profitMargin"
+          label="Tỷ lệ lợi nhuận định mức (%)"
+          rules={[{ required: true, message: 'Vui lòng nhập tỷ lệ lợi nhuận (%)' }]}
+          extra="Dùng để tính tự động giá bán lẻ cho các sản phẩm thuộc danh mục này"
+        >
+          <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="10" addonAfter="%" />
         </Form.Item>
 
         <Form.Item name="description" label="Mô tả">

@@ -11,7 +11,7 @@ import styles from './ProductDetail.module.scss';
 
 export const ProductDetailPage = () => {
   const { id } = useParams();
-  const { currentProduct, isLoading, fetchProductById } = useProductStore();
+  const { currentProduct, isDetailLoading, fetchProductById } = useProductStore();
   const { reviews, fetchProductReviews, createReview } = useReviewStore();
 
   useEffect(() => {
@@ -21,7 +21,7 @@ export const ProductDetailPage = () => {
     }
   }, [id, fetchProductById, fetchProductReviews]);
 
-  if (isLoading && !currentProduct) {
+  if (isDetailLoading && !currentProduct) {
     return (
       <MainLayout>
         <div className={styles.loadingWrap}>

@@ -19,6 +19,7 @@ export const EmployeeFormModal = ({
           fullName: editingEmployee.fullName || editingEmployee.hoTen,
           username: editingEmployee.username,
           phoneNumber: editingEmployee.phoneNumber || editingEmployee.soDienThoai,
+          email: editingEmployee.email || '',
           position: editingEmployee.position || editingEmployee.chucVu || 'STAFF'
         });
       } else {
@@ -80,6 +81,14 @@ export const EmployeeFormModal = ({
           rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
         >
           <Input placeholder="0901234567" />
+        </Form.Item>
+
+        <Form.Item
+          name="email"
+          label="Email liên hệ"
+          rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}
+        >
+          <Input placeholder="nguyenvana@gmail.com" />
         </Form.Item>
 
         <Form.Item name="position" label="Chức vụ" rules={[{ required: true }]}>

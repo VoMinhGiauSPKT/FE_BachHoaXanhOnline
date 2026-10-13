@@ -38,35 +38,36 @@ export const OrderDetailModal = ({ open, order, onCancel }) => {
       render: (_, r) => {
         const p = r.unitPrice || r.price || r.donGia || 0;
         const q = r.quantity || r.soLuong || 1;
-        return <strong style={{ color: '#008848' }}>{formatVND(p * q)}</strong>;
+        const total = r.itemTotal !== undefined ? r.itemTotal : (p * q);
+        return <strong style={{ color: '#008848' }}>{formatVND(total)}</strong>;
       }
     }
   ];
 
   return (
     <Modal
-      title={`Chi tiết đơn hàng: ${order.orderId || order.id}`}
+      title={`Chi tiết đơn hàng: ${order.orderId || order.maDonHang || order.id}`}
       open={open}
       onCancel={onCancel}
       footer={null}
       width={720}
     >
       <Descriptions bordered size="small" column={{ xs: 1, sm: 2 }}>
-        <Descriptions.Item label="Người nhận">{order.receiverName || order.tenNguoiNhan}</Descriptions.Item>
-        <Descriptions.Item label="Số điện thoại">{order.phoneNumber || order.soDienThoaiNhan}</Descriptions.Item>
+        <Descriptions.Item label="Người nhận">{order.receiverName || order.tenNguoiNhan || '—'}</Descriptions.Item>
+        <Descriptions.Item label="Số điện thoại">{order.phoneNumber || order.soDienThoaiNhan || '—'}</Descriptions.Item>
         <Descriptions.Item label="Địa chỉ" span={2}>
-          {order.shippingAddress || order.diaChiGiaoHang}
+          {order.shippingAddress || order.diaChiGiaoHang || '—'}
         </Descriptions.Item>
-        <Descriptions.Item label="Ngày đặt">{formatDate(order.createdAt)}</Descriptions.Item>
+        <Descriptions.Item label="Ngày đặt">{formatDate(order.createdAt || order.ngayLap)}</Descriptions.Item>
         <Descriptions.Item label="Thanh toán">
-          {formatPaymentMethod(order.paymentMethod || order.hinhThucThanhToan)}
+          {formatPaymentMethod(order.paymentMethod || order.hinhThucThanhToan || order.phuongThucTT)}
         </Descriptions.Item>
         <Descriptions.Item label="Trạng thái">
-          <Tag color="blue">{ORDER_STATUS_LABELS[order.status] || order.status}</Tag>
+          <Tag color="blue">{ORDER_STATUS_LABELS[order.status || order.trangThai] || order.status || order.trangThai}</Tag>
         </Descriptions.Item>
         <Descriptions.Item label="Tổng tiền">
           <strong style={{ color: '#008848', fontSize: 16 }}>
-            {formatVND(order.totalAmount || order.tongTien)}
+            {formatVND(order.totalAmount || order.tongTienSauGiamGia || order.tongTien)}
           </strong>
         </Descriptions.Item>
       </Descriptions>

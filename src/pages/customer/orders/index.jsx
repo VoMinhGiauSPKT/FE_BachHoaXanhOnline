@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, Button, Empty } from 'antd';
+import { Card, Table, Tag, Button, message } from 'antd';
 import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
 import MainLayout from '../../../layouts/MainLayout';
 import { useOrderStore } from '../../../stores/useOrderStore';
@@ -22,13 +22,28 @@ const getStatusColor = (status) => {
 };
 
 export const CustomerOrdersPage = () => {
-  const { orders, isLoading, fetchOrders, refresh } = useOrderStore();
+  const { orders, isLoading, fetchOrders, fetchOrderById, refresh } = useOrderStore();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
+
+  const handleViewDetail = async (record) => {
+    const id = record.orderId || record.maDonHang || record.id;
+    const hide = message.loading('Đang tải chi tiết đơn hàng...', 0);
+    try {
+      const detail = await fetchOrderById(id);
+      hide();
+      setSelectedOrder(detail || record);
+      setDetailOpen(true);
+    } catch {
+      hide();
+      setSelectedOrder(record);
+      setDetailOpen(true);
+    }
+  };
 
   const columns = [
     {
@@ -72,10 +87,7 @@ export const CustomerOrdersPage = () => {
           size="small"
           type="primary"
           icon={<EyeOutlined />}
-          onClick={() => {
-            setSelectedOrder(record);
-            setDetailOpen(true);
-          }}
+          onClick={() => handleViewDetail(record)}
         >
           Xem
         </Button>

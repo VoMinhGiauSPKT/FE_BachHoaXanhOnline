@@ -70,6 +70,18 @@ export const useEmployeeStore = create((set, get) => ({
     }
   },
 
+  fetchEmployeeById: async (id) => {
+    try {
+      const res = await employeeService.getEmployeeById(id);
+      const emp = res?.data?.data || res?.data || res;
+      set({ currentEmployee: emp });
+      return emp;
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết nhân viên:', err);
+      return null;
+    }
+  },
+
   createEmployee: async (data) => {
     set({ isLoading: true });
     try {

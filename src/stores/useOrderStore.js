@@ -58,14 +58,13 @@ export const useOrderStore = create((set, get) => ({
   },
 
   fetchOrderById: async (id) => {
-    set({ isLoading: true, error: null });
     try {
       const res = await orderService.getOrderById(id);
-      const order = res.data?.data || res.data;
-      set({ selectedOrder: order, isLoading: false });
+      const order = res?.data?.data || res?.data || res;
+      set({ selectedOrder: order });
       return order;
     } catch (err) {
-      set({ error: err?.message, isLoading: false });
+      console.error('Lỗi khi tải chi tiết đơn hàng:', err);
       return null;
     }
   },

@@ -10,6 +10,7 @@ export const AdminPromotionsPage = () => {
     promotions,
     isLoading,
     fetchPromotions,
+    fetchPromotionByCode,
     createPromotion,
     updatePromotion,
     deletePromotion,
@@ -23,9 +24,19 @@ export const AdminPromotionsPage = () => {
     fetchPromotions();
   }, [fetchPromotions]);
 
-  const handleEdit = (promo) => {
-    setEditingPromotion(promo);
-    setModalOpen(true);
+  const handleEdit = async (promo) => {
+    const code = promo.promotionCode || promo.code || promo.maKhuyenMai;
+    const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
+    try {
+      const detail = await fetchPromotionByCode(code);
+      hide();
+      setEditingPromotion(detail || promo);
+      setModalOpen(true);
+    } catch {
+      hide();
+      setEditingPromotion(promo);
+      setModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {

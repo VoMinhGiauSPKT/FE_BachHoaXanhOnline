@@ -8,6 +8,7 @@ export const useProductStore = create((set, get) => ({
   page: 1,
   limit: 12,
   isLoading: false,
+  isDetailLoading: false,
   error: null,
   filters: {
     keyword: '',
@@ -87,15 +88,15 @@ export const useProductStore = create((set, get) => ({
   },
 
   fetchProductById: async (id) => {
-    set({ isLoading: true, error: null });
+    set({ isDetailLoading: true });
     try {
       const res = await productService.getProductById(id);
       const product = res?.data?.data || res?.data || res;
-      set({ currentProduct: product, isLoading: false });
+      set({ currentProduct: product, isDetailLoading: false });
       return product;
     } catch (err) {
       console.error('Lỗi khi tải chi tiết sản phẩm từ API:', err);
-      set({ currentProduct: null, error: err?.message, isLoading: false });
+      set({ currentProduct: null, isDetailLoading: false });
       return null;
     }
   },

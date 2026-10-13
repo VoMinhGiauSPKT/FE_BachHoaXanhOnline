@@ -16,11 +16,11 @@ export const PromotionFormModal = ({
     if (open) {
       if (editingPromotion) {
         form.setFieldsValue({
-          code: editingPromotion.code || editingPromotion.maKhuyenMai,
-          description: editingPromotion.description || editingPromotion.moTa,
-          discountPercent: editingPromotion.discountPercent || editingPromotion.phanTramGiam || 10,
-          minOrderAmount: editingPromotion.minOrderAmount || editingPromotion.giaTriDonToiThieu || 100000,
-          maxDiscountAmount: editingPromotion.maxDiscountAmount || editingPromotion.giamToiDa || 50000,
+          code: editingPromotion.promotionCode || editingPromotion.code || editingPromotion.maKhuyenMai,
+          description: editingPromotion.description || editingPromotion.moTa || editingPromotion.promotionName || '',
+          discountPercent: editingPromotion.discountValue ?? editingPromotion.discountPercent ?? editingPromotion.phanTramGiam ?? 10,
+          minOrderAmount: editingPromotion.minOrderAmount ?? editingPromotion.giaTriDonToiThieu ?? 100000,
+          maxDiscountAmount: editingPromotion.maxDiscount ?? editingPromotion.maxDiscountAmount ?? editingPromotion.giamToiDa ?? 50000,
           endDate: editingPromotion.endDate ? dayjs(editingPromotion.endDate) : dayjs().add(30, 'day')
         });
       } else {

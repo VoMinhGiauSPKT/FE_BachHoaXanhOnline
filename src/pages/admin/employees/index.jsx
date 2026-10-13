@@ -14,6 +14,7 @@ export const AdminEmployeesPage = () => {
     isLoading,
     filters,
     fetchEmployees,
+    fetchEmployeeById,
     setFilters,
     setPage,
     createEmployee,
@@ -29,9 +30,19 @@ export const AdminEmployeesPage = () => {
     fetchEmployees();
   }, [fetchEmployees]);
 
-  const handleEdit = (emp) => {
-    setEditingEmployee(emp);
-    setModalOpen(true);
+  const handleEdit = async (emp) => {
+    const id = emp.employeeId || emp.id;
+    const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
+    try {
+      const detail = await fetchEmployeeById(id);
+      hide();
+      setEditingEmployee(detail || emp);
+      setModalOpen(true);
+    } catch {
+      hide();
+      setEditingEmployee(emp);
+      setModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {

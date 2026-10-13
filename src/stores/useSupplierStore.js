@@ -19,6 +19,18 @@ export const useSupplierStore = create((set, get) => ({
     }
   },
 
+  fetchSupplierById: async (id) => {
+    try {
+      const res = await supplierService.getSupplierById(id);
+      const sup = res?.data?.data || res?.data || res;
+      set({ currentSupplier: sup });
+      return sup;
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết nhà cung cấp:', err);
+      return null;
+    }
+  },
+
   createSupplier: async (data) => {
     set({ isLoading: true });
     try {

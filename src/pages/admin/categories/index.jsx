@@ -10,6 +10,7 @@ export const AdminCategoriesPage = () => {
     categories,
     isLoading,
     fetchCategories,
+    fetchCategoryById,
     createCategory,
     updateCategory,
     deleteCategory,
@@ -23,9 +24,19 @@ export const AdminCategoriesPage = () => {
     fetchCategories();
   }, [fetchCategories]);
 
-  const handleEdit = (cat) => {
-    setEditingCategory(cat);
-    setModalOpen(true);
+  const handleEdit = async (cat) => {
+    const id = cat.categoryId || cat.id;
+    const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
+    try {
+      const detail = await fetchCategoryById(id);
+      hide();
+      setEditingCategory(detail || cat);
+      setModalOpen(true);
+    } catch {
+      hide();
+      setEditingCategory(cat);
+      setModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {

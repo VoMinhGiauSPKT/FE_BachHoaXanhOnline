@@ -29,6 +29,18 @@ export const useCategoryStore = create((set, get) => ({
     }
   },
 
+  fetchCategoryById: async (id) => {
+    try {
+      const res = await categoryService.getCategoryById(id);
+      const cat = res?.data?.data || res?.data || res;
+      set({ currentCategory: cat });
+      return cat;
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết danh mục:', err);
+      return null;
+    }
+  },
+
   createCategory: async (categoryData) => {
     set({ isLoading: true });
     try {

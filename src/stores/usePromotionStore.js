@@ -3,6 +3,7 @@ import promotionService from '../services/promotionService';
 
 export const usePromotionStore = create((set, get) => ({
   promotions: [],
+  currentPromotion: null,
   availablePromotions: [],
   isLoading: false,
   error: null,
@@ -16,6 +17,18 @@ export const usePromotionStore = create((set, get) => ({
       set({ promotions: list, isLoading: false });
     } catch (err) {
       set({ error: err?.message, isLoading: false });
+    }
+  },
+
+  fetchPromotionByCode: async (code) => {
+    try {
+      const res = await promotionService.getPromotionByCode(code);
+      const promo = res?.data?.data || res?.data || res;
+      set({ currentPromotion: promo });
+      return promo;
+    } catch (err) {
+      console.error('Lỗi khi tải chi tiết khuyến mãi:', err);
+      return null;
     }
   },
 

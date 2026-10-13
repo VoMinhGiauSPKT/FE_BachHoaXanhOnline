@@ -16,6 +16,7 @@ export const AdminProductsPage = () => {
     isLoading,
     filters,
     fetchProducts,
+    fetchProductById,
     setFilters,
     setPage,
     createProduct,
@@ -36,9 +37,19 @@ export const AdminProductsPage = () => {
     fetchSuppliers();
   }, [fetchProducts, fetchCategories, fetchSuppliers]);
 
-  const handleEdit = (prod) => {
-    setEditingProduct(prod);
-    setModalOpen(true);
+  const handleEdit = async (prod) => {
+    const id = prod.productId || prod.id;
+    const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
+    try {
+      const detail = await fetchProductById(id);
+      hide();
+      setEditingProduct(detail || prod);
+      setModalOpen(true);
+    } catch {
+      hide();
+      setEditingProduct(prod);
+      setModalOpen(true);
+    }
   };
 
   const handleAddNew = () => {
