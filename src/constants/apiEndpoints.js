@@ -86,14 +86,6 @@ export const API_ENDPOINTS = {
   SUPPLIER: {
     BASE: '/supplier',
     DETAIL: (id) => `/supplier/${id}`
-  },
-
-  // 13. Báo cáo & Thống kê (Analytics)
-  ANALYTICS: {
-    OVERVIEW: '/analytics/overview',
-    CHART: '/analytics/chart',
-    INVENTORY_ALERTS: '/analytics/inventory-alerts',
-    TOP_PRODUCTS: '/analytics/top-products'
   }
 };
 

@@ -32,11 +32,21 @@ export const useAuthStore = create(
       /**
        * Đăng nhập người dùng (Khách hàng hoặc Nhân viên/Admin)
        */
-      login: async ({ username, password }) => {
+      login: async (credentials, maybePassword) => {
         set({ isLoading: true, error: null });
+        let username, password;
+        if (typeof credentials === 'object' && credentials !== null) {
+          username = credentials.username;
+          password = credentials.password;
+        } else {
+          username = credentials;
+          password = maybePassword;
+        }
+
         try {
           const res = await authService.login({ username, password });
-          const { accessToken, refreshToken, userType, customer, employee } = res.data;
+          const responseData = res.data?.data || res.data;
+          const { accessToken, refreshToken, userType, customer, employee } = responseData;
 
           const userInfo = customer || employee || { username, userType };
           const position = employee?.position || userInfo?.position || null;
@@ -52,17 +62,27 @@ export const useAuthStore = create(
             error: null
           });
 
+          // Tự động tải thông tin cá nhân chi tiết (SĐT, Email, v.v.)
+          get().fetchProfile();
+
           // Nếu đăng nhập quyền Nhân viên / Admin, xóa sạch giỏ hàng mua sắm khách hàng
           if (userType === 'EMPLOYEE' && typeof window !== 'undefined') {
             localStorage.removeItem('bhx-guest-cart');
             window.dispatchEvent(new CustomEvent('auth:cart-reset'));
           }
 
-          return { success: true, message: res.message, data: res.data };
+          return {
+            success: true,
+            message: res.data?.message || 'Đăng nhập thành công',
+            data: responseData,
+            user: userInfo,
+            userType,
+            position
+          };
         } catch (err) {
-          const message = err.message || 'Đăng nhập không thành công';
-          set({ isLoading: false, error: message });
-          return { success: false, message };
+          const errMsg = err.response?.data?.message || err.message || 'Đăng nhập không thành công';
+          set({ isLoading: false, error: errMsg });
+          return { success: false, message: errMsg, error: errMsg };
         }
       },
 
@@ -74,11 +94,11 @@ export const useAuthStore = create(
         try {
           const res = await authService.register(userData);
           set({ isLoading: false, error: null });
-          return { success: true, message: res.message, data: res.data };
+          return { success: true, message: res.data?.message || 'Đăng ký thành công', data: res.data };
         } catch (err) {
-          const message = err.message || 'Đăng ký không thành công';
-          set({ isLoading: false, error: message });
-          return { success: false, message };
+          const errMsg = err.response?.data?.message || err.message || 'Đăng ký không thành công';
+          set({ isLoading: false, error: errMsg });
+          return { success: false, message: errMsg, error: errMsg };
         }
       },
 
@@ -110,18 +130,42 @@ export const useAuthStore = create(
         if (!get().isAuthenticated) return null;
         try {
           const res = await authService.getProfile();
-          if (res.data) {
+          const profileData = res.data?.data || res.data;
+          if (profileData) {
             set((state) => ({
-              user: { ...state.user, ...res.data },
-              userType: res.data.userType || state.userType,
-              position: res.data.position || state.position
+              user: { ...state.user, ...profileData },
+              userType: profileData.userType || state.userType,
+              position: profileData.position || state.position
             }));
-            return res.data;
+            return profileData;
           }
         } catch (err) {
           console.warn('Lỗi khi fetch profile:', err);
         }
         return null;
+      },
+
+      /**
+       * Đổi mật khẩu tài khoản
+       */
+      changePassword: async ({ currentPassword, newPassword, confirmPassword }) => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await authService.changePassword({ currentPassword, newPassword, confirmPassword });
+          set({ isLoading: false });
+          return {
+            success: true,
+            message: res.data?.message || 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'
+          };
+        } catch (err) {
+          const errMsg = err.response?.data?.message || err.message || 'Đổi mật khẩu không thành công';
+          set({ isLoading: false, error: errMsg });
+          return {
+            success: false,
+            message: errMsg,
+            error: errMsg
+          };
+        }
       },
 
       /**

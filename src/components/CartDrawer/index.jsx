@@ -112,26 +112,21 @@ export const CartDrawer = () => {
 
                       <div className={styles.actionRow}>
                         {(() => {
-                          const isKg = (item.unit || '').toUpperCase() === 'KG';
-                          const minQty = isKg ? 0.1 : 1;
-                          const nextDecr = isKg
-                            ? Math.max(minQty, Math.round((item.quantity - 0.1) * 10) / 10)
-                            : Math.max(1, item.quantity - 1);
-                          const nextIncr = isKg
-                            ? Math.round((item.quantity + 0.1) * 10) / 10
-                            : item.quantity + 1;
+                          const currentQty = Math.max(1, Math.floor(Number(item.quantity)) || 1);
+                          const nextDecr = Math.max(1, currentQty - 1);
+                          const nextIncr = currentQty + 1;
                           return (
                             <div className={styles.counter}>
                               <button
                                 type="button"
                                 onClick={() => updateQuantity(lineId, nextDecr)}
-                                disabled={item.quantity <= minQty}
+                                disabled={currentQty <= 1}
                                 aria-label="Giảm"
                               >
                                 −
                               </button>
                               <span>
-                                {formatQuantity(item.quantity)}{isKg ? ' kg' : ''}
+                                {currentQty}
                               </span>
                               <button
                                 type="button"

@@ -1,0 +1,42 @@
+.bannerWrapper {
+  margin-bottom: 24px;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.08);
+}
+
+.bannerSlide {
+  height: 200px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  color: #ffffff;
+  padding: 24px;
+}
+
+.content {
+  max-width: 800px;
+
+  h2 {
+    color: #ffffff;
+    font-size: 26px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -0.5px;
+
+    @media (max-width: 600px) {
+      font-size: 18px;
+    }
+  }
+
+  p {
+    font-size: 15px;
+    opacity: 0.95;
+    margin: 0;
+
+    @media (max-width: 600px) {
+      font-size: 13px;
+    }
+  }
+}
