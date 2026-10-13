@@ -88,7 +88,7 @@ export const OrderTable = ({
     {
       title: 'Thanh toán',
       key: 'payment',
-      width: 120,
+      width: 200,
       render: (_, record) => formatPaymentMethod(record.paymentMethod || record.hinhThucThanhToan || record.phuongThucTT)
     },
     {

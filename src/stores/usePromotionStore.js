@@ -8,10 +8,19 @@ export const usePromotionStore = create((set, get) => ({
   isLoading: false,
   error: null,
 
-  fetchPromotions: async (params = {}) => {
+  filters: { keyword: '', type: '' },
+
+  setFilters: (newFilters) => {
+    const updated = { ...get().filters, ...newFilters };
+    set({ filters: updated });
+    get().fetchPromotions(updated);
+  },
+
+  fetchPromotions: async (params) => {
     set({ isLoading: true, error: null });
+    const queryParams = params !== undefined ? params : get().filters;
     try {
-      const res = await promotionService.getPromotions(params);
+      const res = await promotionService.getPromotions(queryParams);
       const data = res?.data || res;
       const list = Array.isArray(data) ? data : (data?.promotions || data?.items || data?.data || []);
       set({ promotions: list, isLoading: false });
@@ -49,7 +58,7 @@ export const usePromotionStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await promotionService.createPromotion(promoData);
-      await get().fetchPromotions();
+      await get().fetchPromotions(get().filters);
       return { success: true, data: res.data };
     } catch (err) {
       set({ isLoading: false });
@@ -61,7 +70,7 @@ export const usePromotionStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       const res = await promotionService.updatePromotion(code, promoData);
-      await get().fetchPromotions();
+      await get().fetchPromotions(get().filters);
       return { success: true, data: res.data };
     } catch (err) {
       set({ isLoading: false });
@@ -73,7 +82,7 @@ export const usePromotionStore = create((set, get) => ({
     set({ isLoading: true });
     try {
       await promotionService.deletePromotion(code);
-      await get().fetchPromotions();
+      await get().fetchPromotions(get().filters);
       return { success: true };
     } catch (err) {
       set({ isLoading: false });
@@ -81,7 +90,7 @@ export const usePromotionStore = create((set, get) => ({
     }
   },
 
-  refresh: () => get().fetchPromotions()
+  refresh: () => get().fetchPromotions(get().filters)
 }));
 
 export default usePromotionStore;

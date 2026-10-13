@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Space, Button, Popconfirm, Typography } from 'antd';
+import { Table, Tag, Space, Button, Popconfirm, Typography, Tooltip } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
@@ -9,60 +9,104 @@ const { Text } = Typography;
 export const PromotionTable = ({ promotions, isLoading, onEdit, onDelete }) => {
   const columns = [
     {
-      title: 'Mã Voucher',
-      dataIndex: 'code',
+      title: 'Mã',
       key: 'code',
-      width: 130,
-      render: (code, r) => <Text copyable strong>{code || r.maKhuyenMai}</Text>
+      width: 120,
+      render: (_, r) => (
+        <Text copyable strong>
+          {r.promotionCode || r.code || r.maKhuyenMai}
+        </Text>
+      )
     },
     {
-      title: 'Tên / Mô tả',
-      dataIndex: 'description',
+      title: 'Mô tả',
       key: 'description',
-      render: (desc, r) => desc || r.moTa || 'Giảm giá đơn hàng'
+      render: (_, r) => (
+        <div>
+          <div style={{ fontWeight: 500 }}>
+            {r.promotionName || r.tenKhuyenMai || 'Khuyến mãi'}
+          </div>
+          {(r.description || r.moTa) && (
+            <Text type="secondary" style={{ fontSize: 12 }}>
+              {r.description || r.moTa}
+            </Text>
+          )}
+        </div>
+      )
     },
     {
       title: 'Giảm giá',
       key: 'discount',
       width: 120,
       render: (_, r) => {
-        const percent = r.discountPercent || r.phanTramGiam;
-        if (percent) return <Tag color="green">-{percent}%</Tag>;
-        const amount = r.discountAmount || r.soTienGiam;
-        return <Tag color="green">-{formatVND(amount || 0)}</Tag>;
+        const type = (r.discountType || r.loaiKhuyenMai || '').toUpperCase();
+        const val = r.discountValue ?? r.giaTriGiam ?? r.discountPercent ?? r.discountAmount ?? 0;
+        if (type === 'PHANTRAM' || type === 'PERCENT' || (val <= 100 && type !== 'TIENMAT')) {
+          return <Tag color="green">-{val}%</Tag>;
+        }
+        return <Tag color="blue">-{formatVND(val)}</Tag>;
       }
     },
     {
       title: 'Đơn tối thiểu',
-      dataIndex: 'minOrderAmount',
       key: 'minOrderAmount',
       width: 130,
-      render: (min, r) => formatVND(min || r.giaTriDonToiThieu || 0)
+      render: (_, r) => formatVND(r.minOrderAmount ?? r.donHangToiThieu ?? r.giaTriDonToiThieu ?? 0)
+    },
+    {
+      title: 'Giảm tối đa',
+      key: 'maxDiscount',
+      width: 130,
+      render: (_, r) => {
+        const max = r.maxDiscount ?? r.giamToiDa ?? r.maxDiscountAmount;
+        return max ? formatVND(max) : <Text type="secondary">-</Text>;
+      }
+    },
+    {
+      title: 'Số lượt dùng',
+      key: 'remainingUsage',
+      width: 110,
+      align: 'center',
+      render: (_, r) => {
+        const usage = r.remainingUsage ?? r.soLuongDung ?? 0;
+        return (
+          <Tag color={usage > 10 ? 'cyan' : usage > 0 ? 'orange' : 'default'}>
+            {usage}
+          </Tag>
+        );
+      }
     },
     {
       title: 'Hạn dùng',
-      key: 'expiry',
-      width: 150,
+      key: 'endDate',
+      width: 130,
       render: (_, r) => formatDate(r.endDate || r.ngayKetThuc)
     },
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 120,
+      width: 100,
+      align: 'center',
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(record)}
-          />
+          <Tooltip title="Chỉnh sửa voucher">
+            <Button
+              type="primary"
+              size="small"
+              icon={<EditOutlined />}
+              onClick={() => onEdit(record)}
+            />
+          </Tooltip>
           <Popconfirm
             title="Xác nhận xóa voucher này?"
+            okText="Xóa"
+            cancelText="Hủy"
             okButtonProps={{ danger: true }}
-            onConfirm={() => onDelete(record.code || record.maKhuyenMai)}
+            onConfirm={() => onDelete(record.promotionCode || record.code || record.maKhuyenMai)}
           >
-            <Button danger size="small" icon={<DeleteOutlined />} />
+            <Tooltip title="Xóa voucher">
+              <Button danger size="small" icon={<DeleteOutlined />} />
+            </Tooltip>
           </Popconfirm>
         </Space>
       )
@@ -71,7 +115,7 @@ export const PromotionTable = ({ promotions, isLoading, onEdit, onDelete }) => {
 
   return (
     <Table
-      rowKey={(r) => r.code || r.maKhuyenMai || r.id}
+      rowKey={(r) => r.promotionCode || r.code || r.maKhuyenMai || r.id}
       dataSource={promotions}
       columns={columns}
       loading={isLoading}

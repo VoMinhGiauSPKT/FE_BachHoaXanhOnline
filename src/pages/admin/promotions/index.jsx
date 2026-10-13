@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Space, message } from 'antd';
-import { PlusOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Button, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { usePromotionStore } from '../../../stores/usePromotionStore';
+import PromotionFilterBar from './PromotionFilterBar';
 import PromotionTable from './PromotionTable';
 import PromotionFormModal from './PromotionFormModal';
 
@@ -9,8 +10,10 @@ export const AdminPromotionsPage = () => {
   const {
     promotions,
     isLoading,
+    filters,
     fetchPromotions,
     fetchPromotionByCode,
+    setFilters,
     createPromotion,
     updatePromotion,
     deletePromotion,
@@ -46,8 +49,15 @@ export const AdminPromotionsPage = () => {
 
   const handleModalSubmit = async (values) => {
     if (editingPromotion) {
-      const code = editingPromotion.code || editingPromotion.maKhuyenMai;
-      const res = await updatePromotion(code, values);
+      const code = editingPromotion.promotionCode || editingPromotion.code || editingPromotion.maKhuyenMai;
+      const updatePayload = {
+        promotionName: values.promotionName,
+        description: values.description,
+        maxDiscount: values.maxDiscount,
+        remainingUsage: values.remainingUsage ?? values.usageLimit,
+        endDate: values.endDate
+      };
+      const res = await updatePromotion(code, updatePayload);
       if (res.success) {
         message.success('Cập nhật khuyến mãi thành công!');
         setModalOpen(false);
@@ -55,7 +65,9 @@ export const AdminPromotionsPage = () => {
         message.error(res.error || 'Cập nhật thất bại');
       }
     } else {
-      const res = await createPromotion(values);
+      const createPayload = { ...values };
+      delete createPayload.promotionCode;
+      const res = await createPromotion(createPayload);
       if (res.success) {
         message.success('Tạo voucher khuyến mãi thành công!');
         setModalOpen(false);
@@ -79,16 +91,20 @@ export const AdminPromotionsPage = () => {
       title="Quản lý Chương trình Khuyến Mãi & Voucher"
       variant="borderless"
       extra={
-        <Space>
-          <Button icon={<ReloadOutlined />} onClick={refresh}>
-            Làm mới
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
-            Tạo voucher mới
-          </Button>
-        </Space>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
+          Tạo voucher mới
+        </Button>
       }
     >
+      <PromotionFilterBar
+        search={filters?.keyword || ''}
+        typeFilter={filters?.type || ''}
+        onSearchChange={(kw) => setFilters({ keyword: kw })}
+        onTypeChange={(tp) => setFilters({ type: tp === 'ALL' ? '' : tp })}
+        onReset={() => setFilters({ keyword: '', type: '' })}
+        onRefresh={refresh}
+      />
+
       <PromotionTable
         promotions={promotions}
         isLoading={isLoading}
