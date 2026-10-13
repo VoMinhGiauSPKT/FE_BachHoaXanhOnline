@@ -105,9 +105,7 @@ export const ProductFormModal = ({
             <Form.Item
               name="categoryId"
               label={
-                <span>
-                  Danh mục ngành hàng {isEdit && <Tag color="default">Cố định</Tag>}
-                </span>
+                "Danh mục ngành hàng"
               }
               rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
             >
@@ -124,7 +122,7 @@ export const ProductFormModal = ({
 
         <div className={styles.calculationCard}>
           <div className={styles.calculationHeader}>
-            <span>📊 Công thức tính giá bán theo CSDL Neon:</span>
+            <span>📊 Công thức tính giá bán:</span>
             <Tag color="cyan">% Lợi nhuận danh mục: {profitMargin}%</Tag>
           </div>
           <div className={styles.formulaDesc}>
@@ -142,12 +140,6 @@ export const ProductFormModal = ({
             <div className={styles.breakdownItem}>
               Thuế VAT: <span>{vat || 0}%</span>
             </div>
-            <div className={styles.breakdownItem}>
-              Giá bán tính tự động:{' '}
-              <span className={styles.sellingPriceHighlight}>
-                {formatVND(form.getFieldValue('sellingPrice') || 0)}
-              </span>
-            </div>
           </div>
         </div>
 
@@ -156,9 +148,7 @@ export const ProductFormModal = ({
             <Form.Item
               name="importPrice"
               label={
-                <span>
-                  Giá nhập vào (VND) {isEdit && <Tag color="default">Cố định</Tag>}
-                </span>
+                "Giá nhập vào (VND)"
               }
               rules={[{ required: true, message: 'Vui lòng nhập giá nhập' }]}
             >
@@ -178,9 +168,7 @@ export const ProductFormModal = ({
             <Form.Item
               name="vat"
               label={
-                <span>
-                  Thuế VAT (%) {isEdit && <Tag color="default">Cố định</Tag>}
-                </span>
+                "Thuế VAT (%)"
               }
               rules={[{ required: true, message: 'Chọn mức thuế VAT' }]}
             >

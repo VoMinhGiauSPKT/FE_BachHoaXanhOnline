@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Space, Button, Popconfirm, Typography } from 'antd';
+import { Table, Space, Button, Popconfirm, Typography, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -7,23 +7,27 @@ const { Text } = Typography;
 export const CategoryTable = ({ categories, isLoading, onEdit, onDelete }) => {
   const columns = [
     {
-      title: 'Mã danh mục',
+      title: 'Mã',
       dataIndex: 'categoryId',
       key: 'categoryId',
-      width: 140,
+      width: 130,
       render: (id, record) => <Text copyable strong>{id || record.id}</Text>
     },
     {
-      title: 'Tên danh mục',
+      title: 'Tên',
       dataIndex: 'categoryName',
       key: 'categoryName',
       render: (name, record) => <strong>{name || record.name}</strong>
     },
     {
-      title: 'Mô tả',
-      dataIndex: 'description',
-      key: 'description',
-      render: (text) => text || '—'
+      title: 'Lợi nhuận',
+      dataIndex: 'profitMargin',
+      key: 'profitMargin',
+      width: 140,
+      render: (margin, record) => {
+        const val = margin !== undefined ? margin : (record.phanTramLoiNhuan || 0);
+        return <Tag color="blue">{val}%</Tag>;
+      }
     },
     {
       title: 'Thao tác',

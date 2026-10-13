@@ -16,8 +16,7 @@ export const CategoryFormModal = ({
       if (editingCategory) {
         form.setFieldsValue({
           categoryName: editingCategory.categoryName || editingCategory.name,
-          profitMargin: editingCategory.profitMargin !== undefined ? Number(editingCategory.profitMargin) : 10,
-          description: editingCategory.description || ''
+          profitMargin: editingCategory.profitMargin !== undefined ? Number(editingCategory.profitMargin) : 10
         });
       } else {
         form.resetFields();
@@ -31,8 +30,7 @@ export const CategoryFormModal = ({
       const values = await form.validateFields();
       await onSubmit({
         categoryName: values.categoryName?.trim(),
-        profitMargin: Number(values.profitMargin || 0),
-        description: values.description?.trim() || ''
+        profitMargin: Number(values.profitMargin || 0)
       });
     } catch (err) {
       // Validate error
@@ -66,10 +64,6 @@ export const CategoryFormModal = ({
           extra="Dùng để tính tự động giá bán lẻ cho các sản phẩm thuộc danh mục này"
         >
           <InputNumber min={0} max={100} style={{ width: '100%' }} placeholder="10" addonAfter="%" />
-        </Form.Item>
-
-        <Form.Item name="description" label="Mô tả">
-          <Input.TextArea rows={3} placeholder="Mô tả danh mục hàng..." />
         </Form.Item>
       </Form>
     </Modal>
