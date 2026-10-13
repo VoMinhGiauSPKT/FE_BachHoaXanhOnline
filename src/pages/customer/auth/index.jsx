@@ -21,15 +21,17 @@ export const AuthPage = () => {
 
   const handleLoginSubmit = async (values) => {
     clearError();
-    const res = await login(values.username, values.password);
+    const res = await login({ username: values.username, password: values.password });
     if (res.success) {
       message.success('Đăng nhập thành công!');
       await fetchCart();
-      if (res.user?.position === 'ADMIN' || res.user?.position === 'STAFF') {
+      if (res.userType === 'EMPLOYEE' || res.position === 'ADMIN' || res.position === 'STAFF') {
         navigate(PATHS.ADMIN.DASHBOARD);
       } else {
         navigate(redirectPath);
       }
+    } else {
+      message.error(res.message || 'Đăng nhập không thành công');
     }
   };
 
@@ -40,6 +42,8 @@ export const AuthPage = () => {
       message.success('Đăng ký tài khoản thành công! Vui lòng đăng nhập.');
       setActiveTab('login');
       loginForm.setFieldsValue({ username: values.username });
+    } else {
+      message.error(res.message || 'Đăng ký không thành công');
     }
   };
 

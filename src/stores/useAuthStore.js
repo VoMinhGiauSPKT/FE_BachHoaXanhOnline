@@ -32,11 +32,21 @@ export const useAuthStore = create(
       /**
        * Đăng nhập người dùng (Khách hàng hoặc Nhân viên/Admin)
        */
-      login: async ({ username, password }) => {
+      login: async (credentials, maybePassword) => {
         set({ isLoading: true, error: null });
+        let username, password;
+        if (typeof credentials === 'object' && credentials !== null) {
+          username = credentials.username;
+          password = credentials.password;
+        } else {
+          username = credentials;
+          password = maybePassword;
+        }
+
         try {
           const res = await authService.login({ username, password });
-          const { accessToken, refreshToken, userType, customer, employee } = res.data;
+          const responseData = res.data?.data || res.data;
+          const { accessToken, refreshToken, userType, customer, employee } = responseData;
 
           const userInfo = customer || employee || { username, userType };
           const position = employee?.position || userInfo?.position || null;
@@ -58,11 +68,18 @@ export const useAuthStore = create(
             window.dispatchEvent(new CustomEvent('auth:cart-reset'));
           }
 
-          return { success: true, message: res.message, data: res.data };
+          return {
+            success: true,
+            message: res.data?.message || 'Đăng nhập thành công',
+            data: responseData,
+            user: userInfo,
+            userType,
+            position
+          };
         } catch (err) {
-          const message = err.message || 'Đăng nhập không thành công';
-          set({ isLoading: false, error: message });
-          return { success: false, message };
+          const errMsg = err.response?.data?.message || err.message || 'Đăng nhập không thành công';
+          set({ isLoading: false, error: errMsg });
+          return { success: false, message: errMsg, error: errMsg };
         }
       },
 
@@ -74,11 +91,11 @@ export const useAuthStore = create(
         try {
           const res = await authService.register(userData);
           set({ isLoading: false, error: null });
-          return { success: true, message: res.message, data: res.data };
+          return { success: true, message: res.data?.message || 'Đăng ký thành công', data: res.data };
         } catch (err) {
-          const message = err.message || 'Đăng ký không thành công';
-          set({ isLoading: false, error: message });
-          return { success: false, message };
+          const errMsg = err.response?.data?.message || err.message || 'Đăng ký không thành công';
+          set({ isLoading: false, error: errMsg });
+          return { success: false, message: errMsg, error: errMsg };
         }
       },
 
