@@ -24,6 +24,7 @@ export const AdminContainer = () => {
   // Xác định activeTab đồng bộ với pathname
   const getTabFromPath = useCallback(() => {
     const path = location.pathname;
+    if (path.includes('/admin/analytics')) return 'analytics';
     if (path.includes('/admin/categories')) return 'categories';
     if (path.includes('/admin/suppliers')) return 'suppliers';
     if (path.includes('/admin/orders')) return 'orders';
@@ -42,6 +43,7 @@ export const AdminContainer = () => {
   const handleTabChange = (newTab) => {
     setActiveTab(newTab);
     const pathMap = {
+      analytics: PATHS.ADMIN.ANALYTICS || '/admin/analytics',
       products: PATHS.ADMIN.PRODUCTS,
       categories: PATHS.ADMIN.CATEGORIES,
       suppliers: PATHS.ADMIN.SUPPLIERS,

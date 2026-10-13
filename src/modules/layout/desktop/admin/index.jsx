@@ -7,6 +7,7 @@ import OrderManager from './components/OrderManager';
 import PromotionManager from './components/PromotionManager';
 import EmployeeManager from './components/EmployeeManager';
 import ReviewManager from './components/ReviewManager';
+import AnalyticsManager from './components/AnalyticsManager';
 
 export const DesktopAdmin = ({
   activeTab = 'products',
@@ -133,6 +134,10 @@ export const DesktopAdmin = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
         {/* Nội dung nghiệp vụ theo Tab */}
         <div>
+          {activeTab === 'analytics' && (
+            <AnalyticsManager />
+          )}
+
           {activeTab === 'products' && (
             <ProductManager
               products={products}
