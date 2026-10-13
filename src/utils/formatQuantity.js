@@ -1,42 +1,28 @@
 /**
  * Tiện ích định dạng số lượng và khối lượng trong hệ thống FreshMart
+ * Quy chuẩn: Chỉ sử dụng số nguyên (integer) cho toàn bộ hệ thống
  */
 
 /**
- * Định dạng số lượng số thập phân (VD: 0.1 -> "0,1", 0.5 -> "0,5", 1 -> "1")
+ * Định dạng số lượng thành số nguyên
  * @param {number|string} qty Số lượng
- * @param {boolean} [useComma=true] Thay dấu chấm bằng dấu phẩy theo chuẩn Việt Nam
  * @returns {string}
  */
-export const formatQuantity = (qty, useComma = true) => {
+export const formatQuantity = (qty) => {
   if (qty === undefined || qty === null || isNaN(Number(qty))) return '0';
-  const num = Math.round(Number(qty) * 100) / 100;
-  const str = num % 1 === 0 ? num.toFixed(0) : num.toString();
-  return useComma ? str.replace('.', ',') : str;
+  const num = Math.round(Number(qty));
+  return num.toString();
 };
 
 /**
  * Định dạng số lượng kết hợp với đơn vị tính
- * Ví dụ: 
- *   - Với KG: 0.1 -> "0,1 kg (100g)", 0.5 -> "0,5 kg (500g)", 1 -> "1 kg"
- *   - Với Đơn vị khác: 2 -> "2 chai"
  * @param {number|string} qty 
  * @param {string} unit 
  * @returns {string}
  */
 export const formatQuantityWithUnit = (qty, unit = '') => {
-  const isKg = (unit || '').toUpperCase() === 'KG';
   const formatted = formatQuantity(qty);
-  if (!isKg) {
-    return `${formatted} ${unit || ''}`.trim();
-  }
-
-  const num = Number(qty);
-  if (num < 1 && num > 0) {
-    const grams = Math.round(num * 1000);
-    return `${formatted} kg (${grams}g)`;
-  }
-  return `${formatted} kg`;
+  return `${formatted} ${unit || ''}`.trim();
 };
 
 export default formatQuantity;

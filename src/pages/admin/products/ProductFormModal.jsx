@@ -65,10 +65,10 @@ export const ProductFormModal = ({
         categoryId: values.categoryId,
         supplierId: values.supplierId,
         unit: values.unit,
-        quantity: Number(values.quantity || 0),
-        importPrice: Number(values.importPrice || 0),
+        quantity: Math.floor(Number(values.quantity || 0)),
+        importPrice: Math.floor(Number(values.importPrice || 0)),
         vat: Number(values.vat || 0) / 100,
-        sellingPrice: Number(values.sellingPrice || 0),
+        sellingPrice: Math.floor(Number(values.sellingPrice || 0)),
         imageUrl: values.imageUrl?.trim() || null,
         expiryDate: values.expiryDate ? dayjs(values.expiryDate).format('YYYY-MM-DD') : null
       };
@@ -147,19 +147,29 @@ export const ProductFormModal = ({
           <Col span={8}>
             <Form.Item
               name="importPrice"
-              label={
-                "Giá nhập vào (VND)"
-              }
-              rules={[{ required: true, message: 'Vui lòng nhập giá nhập' }]}
+              label="Giá nhập vào (VND)"
+              rules={[
+                { required: true, message: 'Vui lòng nhập giá nhập' },
+                {
+                  validator: (_, val) => {
+                    if (val !== undefined && val !== null && !Number.isInteger(Number(val))) {
+                      return Promise.reject(new Error('Giá nhập phải là số nguyên'));
+                    }
+                    return Promise.resolve();
+                  }
+                }
+              ]}
             >
               <InputNumber
                 className="w-100"
                 style={{ width: '100%' }}
                 min={0}
                 step={1000}
+                precision={0}
                 disabled={isEdit}
                 placeholder="Nhập giá nhập..."
                 formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
+                parser={(val) => (val ? String(val).replace(/\D/g, '') : '')}
               />
             </Form.Item>
           </Col>
@@ -167,9 +177,7 @@ export const ProductFormModal = ({
           <Col span={8}>
             <Form.Item
               name="vat"
-              label={
-                "Thuế VAT (%)"
-              }
+              label="Thuế VAT (%)"
               rules={[{ required: true, message: 'Chọn mức thuế VAT' }]}
             >
               <Select
@@ -197,6 +205,7 @@ export const ProductFormModal = ({
                 className="w-100"
                 style={{ width: '100%' }}
                 disabled
+                precision={0}
                 formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               />
             </Form.Item>
@@ -213,9 +222,26 @@ export const ProductFormModal = ({
             <Form.Item
               name="quantity"
               label="Số lượng tồn kho"
-              rules={[{ required: true, message: 'Vui lòng nhập số lượng tồn' }]}
+              rules={[
+                { required: true, message: 'Vui lòng nhập số lượng tồn' },
+                {
+                  validator: (_, val) => {
+                    if (val !== undefined && val !== null && !Number.isInteger(Number(val))) {
+                      return Promise.reject(new Error('Số lượng phải là số nguyên'));
+                    }
+                    return Promise.resolve();
+                  }
+                }
+              ]}
             >
-              <InputNumber style={{ width: '100%' }} min={0} />
+              <InputNumber
+                style={{ width: '100%' }}
+                min={0}
+                step={1}
+                precision={0}
+                placeholder="Nhập số lượng tồn..."
+                parser={(val) => (val ? String(val).replace(/\D/g, '') : '')}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>

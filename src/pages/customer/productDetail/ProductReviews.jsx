@@ -1,49 +1,11 @@
-import React, { useState } from 'react';
-import { List, Rate, Form, Input, Button, Card, Empty, message } from 'antd';
+import React from 'react';
+import { List, Rate, Empty } from 'antd';
 import { formatDate } from '../../../utils/formatDate';
-import useAuthStore from '../../../stores/useAuthStore';
 import styles from './ProductReviews.module.scss';
 
-export const ProductReviews = ({ reviews, productId, onAddReview }) => {
-  const { isAuthenticated } = useAuthStore();
-  const [form] = Form.useForm();
-  const [submitting, setSubmitting] = useState(false);
-
-  const handleSubmit = async (values) => {
-    setSubmitting(true);
-    try {
-      await onAddReview({ productId, rating: values.rating, comment: values.comment });
-      form.resetFields();
-      message.success('Cảm ơn bạn đã gửi đánh giá!');
-    } catch (err) {
-      message.error('Gửi đánh giá thất bại');
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
+export const ProductReviews = ({ reviews }) => {
   return (
     <div className={styles.reviewsWrapper}>
-      {isAuthenticated && (
-        <Card title="Gửi đánh giá của bạn" size="small" className={styles.reviewFormCard}>
-          <Form form={form} layout="vertical" onFinish={handleSubmit} initialValues={{ rating: 5 }}>
-            <Form.Item name="rating" label="Mức độ hài lòng" rules={[{ required: true }]}>
-              <Rate />
-            </Form.Item>
-            <Form.Item
-              name="comment"
-              label="Nhận xét"
-              rules={[{ required: true, message: 'Vui lòng nhập nhận xét của bạn' }]}
-            >
-              <Input.TextArea rows={3} placeholder="Chia sẻ cảm nhận về độ tươi, đóng gói, giao hàng..." />
-            </Form.Item>
-            <Button type="primary" htmlType="submit" loading={submitting}>
-              Gửi đánh giá
-            </Button>
-          </Form>
-        </Card>
-      )}
-
       <h3 className={styles.sectionTitle}>
         Đánh giá từ khách hàng ({reviews?.length || 0})
       </h3>
@@ -54,21 +16,34 @@ export const ProductReviews = ({ reviews, productId, onAddReview }) => {
         <List
           itemLayout="vertical"
           dataSource={reviews}
-          renderItem={(item) => (
-            <List.Item className={styles.reviewItem}>
-              <div className={styles.reviewHeader}>
-                <strong>{item.user?.fullName || item.userName || 'Khách hàng'}</strong>
-                <span className={styles.reviewDate}>{formatDate(item.createdAt)}</span>
-              </div>
-              <Rate disabled defaultValue={item.rating || 5} style={{ fontSize: 12, margin: '4px 0' }} />
-              <p className={styles.reviewComment}>{item.comment || item.noiDung}</p>
-              {item.replyText && (
-                <div className={styles.replyBox}>
-                  <strong>Bách Hóa Xanh phản hồi:</strong> {item.replyText}
+          renderItem={(item) => {
+            const customerName =
+              item.customer?.fullName ||
+              item.customer?.username ||
+              item.user?.fullName ||
+              item.userName ||
+              item.fullName ||
+              'Khách hàng';
+            const rating = item.rating || 5;
+            const content = item.comment || item.noiDung || item.content;
+            const reply = item.reply || item.replyText || item.phanHoi;
+
+            return (
+              <List.Item className={styles.reviewItem}>
+                <div className={styles.reviewHeader}>
+                  <strong style={{ fontSize: 14 }}>{customerName}</strong>
+                  <span className={styles.reviewDate}>{formatDate(item.createdAt)}</span>
                 </div>
-              )}
-            </List.Item>
-          )}
+                <Rate disabled value={rating} style={{ fontSize: 13, margin: '4px 0' }} />
+                <p className={styles.reviewComment}>{content}</p>
+                {reply && (
+                  <div className={styles.replyBox}>
+                    <strong>Bách Hóa Xanh phản hồi:</strong> {reply}
+                  </div>
+                )}
+              </List.Item>
+            );
+          }}
         />
       )}
     </div>

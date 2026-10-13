@@ -29,7 +29,7 @@ export const OrderDetailModal = ({ open, order, onCancel }) => {
       dataIndex: 'quantity',
       key: 'quantity',
       width: 90,
-      render: (q, r) => q || r.soLuong || 1
+      render: (q, r) => Math.floor(Number(q || r.soLuong || 1))
     },
     {
       title: 'Thành tiền',

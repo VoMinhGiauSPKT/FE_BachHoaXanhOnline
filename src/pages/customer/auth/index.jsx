@@ -6,6 +6,7 @@ import MainLayout from '../../../layouts/MainLayout';
 import useAuthStore from '../../../stores/useAuthStore';
 import useCartStore from '../../../stores/useCartStore';
 import { PATHS } from '../../../constants/paths';
+import { getPhoneRules, getEmailRules } from '../../../utils/validators';
 import styles from './Auth.module.scss';
 
 export const AuthPage = () => {
@@ -115,13 +116,13 @@ export const AuthPage = () => {
           <Form.Item
             name="phoneNumber"
             label="Số điện thoại"
-            rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
+            rules={getPhoneRules(true, 'Vui lòng nhập số điện thoại')}
           >
             <Input prefix={<PhoneOutlined />} placeholder="0901234567" size="large" />
           </Form.Item>
 
-          <Form.Item name="email" label="Email (Tùy chọn)">
-            <Input prefix={<MailOutlined />} placeholder="email@domain.com" size="large" />
+          <Form.Item name="email" label="Email / Gmail (Tùy chọn)" rules={getEmailRules(false)}>
+            <Input prefix={<MailOutlined />} placeholder="email@gmail.com" size="large" />
           </Form.Item>
 
           <Button

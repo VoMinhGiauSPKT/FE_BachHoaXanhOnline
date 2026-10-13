@@ -47,6 +47,8 @@ export const useOrderStore = create((set, get) => ({
         set({ orders: data, total: data.length, isLoading: false });
       } else if (data?.items && Array.isArray(data.items)) {
         set({ orders: data.items, total: data.total || data.items.length, isLoading: false });
+      } else if (data?.data?.items && Array.isArray(data.data.items)) {
+        set({ orders: data.data.items, total: data.data.total ?? data.data.items.length, isLoading: false });
       } else if (data?.data && Array.isArray(data.data)) {
         set({ orders: data.data, total: data.total || data.data.length, isLoading: false });
       } else {

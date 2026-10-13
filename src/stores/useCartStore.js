@@ -57,13 +57,14 @@ export const useCartStore = create(
        * Thêm sản phẩm vào giỏ hàng
        */
       addToCart: async (product, quantity = 1) => {
+        const cleanQty = Math.max(1, Math.floor(Number(quantity)) || 1);
         const { isAuthenticated, userType } = useAuthStore.getState();
         const toast = useToastStore.getState().addToast;
 
         if (isAuthenticated && userType === 'CUSTOMER') {
           set({ isLoading: true });
           try {
-            await cartService.addItem({ productId: product.productId || product.id, quantity });
+            await cartService.addItem({ productId: product.productId || product.id, quantity: cleanQty });
             await get().fetchCart();
             toast({
               type: 'success',
@@ -89,26 +90,25 @@ export const useCartStore = create(
 
           const maxStock = product.stock !== undefined ? Number(product.stock) : (currentItems[existingIndex]?.availableStock ?? 99);
           if (existingIndex > -1) {
-            if (currentItems[existingIndex].quantity + quantity > maxStock) {
+            if (currentItems[existingIndex].quantity + cleanQty > maxStock) {
               toast({
                 type: 'warning',
                 message: `Số lượng trong giỏ hàng đã đạt giới hạn tồn kho (${maxStock})!`
               });
               return false;
             }
-            currentItems[existingIndex].quantity = Math.round((currentItems[existingIndex].quantity + quantity) * 100) / 100;
+            currentItems[existingIndex].quantity = currentItems[existingIndex].quantity + cleanQty;
             currentItems[existingIndex].availableStock = maxStock;
             currentItems[existingIndex].itemTotal =
               Math.round(currentItems[existingIndex].quantity * (currentItems[existingIndex].price || product.price));
           } else {
-            if (quantity > maxStock) {
+            if (cleanQty > maxStock) {
               toast({
                 type: 'warning',
                 message: `Số lượng yêu cầu vượt quá tồn kho hiện có (${maxStock})!`
               });
               return false;
             }
-            const cleanQty = Math.round(quantity * 100) / 100;
             currentItems.push({
               lineItemId: `guest_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
               productId: prodId,
@@ -136,11 +136,10 @@ export const useCartStore = create(
        * Cập nhật số lượng mặt hàng
        */
       updateQuantity: async (lineItemId, newQuantity) => {
-        if (newQuantity <= 0) {
+        const cleanNewQty = Math.max(1, Math.floor(Number(newQuantity)) || 1);
+        if (cleanNewQty <= 0) {
           return get().removeItem(lineItemId);
         }
-
-        const cleanNewQty = Math.round(newQuantity * 100) / 100;
 
         const { isAuthenticated, userType } = useAuthStore.getState();
         if (isAuthenticated && userType === 'CUSTOMER') {

@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input, Select } from 'antd';
 import { POSITION_LABELS } from '../../../constants/enums';
+import { getPhoneRules, getEmailRules } from '../../../utils/validators';
 
 export const EmployeeFormModal = ({
   open,
@@ -105,18 +106,15 @@ export const EmployeeFormModal = ({
         <Form.Item
           name="phoneNumber"
           label="Số điện thoại"
-          rules={[
-            { required: true, message: 'Vui lòng nhập SĐT' },
-            { pattern: /^(0|\+84)[0-9]{9}$/, message: 'Số điện thoại không đúng định dạng' }
-          ]}
+          rules={getPhoneRules(true, 'Vui lòng nhập số điện thoại')}
         >
           <Input placeholder="0901234567" />
         </Form.Item>
 
         <Form.Item
           name="email"
-          label="Email liên hệ"
-          rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}
+          label="Email / Gmail liên hệ"
+          rules={getEmailRules(false)}
         >
           <Input placeholder="nguyenvana@gmail.com" />
         </Form.Item>

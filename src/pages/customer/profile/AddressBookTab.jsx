@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Card, List, Button, Tag, Space, Popconfirm, Modal, Form, Input, message } from 'antd';
 import { PlusOutlined, DeleteOutlined, StarOutlined, HomeOutlined } from '@ant-design/icons';
 import { useAddressStore } from '../../../stores/useAddressStore';
+import { getPhoneRules } from '../../../utils/validators';
 
 export const AddressBookTab = () => {
   const { addresses, isLoading, createAddress, setDefaultAddress, deleteAddress } = useAddressStore();
@@ -94,7 +95,7 @@ export const AddressBookTab = () => {
           <Form.Item name="receiverName" label="Họ tên người nhận" rules={[{ required: true }]}>
             <Input placeholder="Nguyễn Văn A" />
           </Form.Item>
-          <Form.Item name="phoneNumber" label="Số điện thoại" rules={[{ required: true }]}>
+          <Form.Item name="phoneNumber" label="Số điện thoại" rules={getPhoneRules(true, 'Vui lòng nhập số điện thoại')}>
             <Input placeholder="0901234567" />
           </Form.Item>
           <Form.Item name="street" label="Địa chỉ cụ thể (Số nhà, tên đường)" rules={[{ required: true }]}>

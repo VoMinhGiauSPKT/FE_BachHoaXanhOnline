@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { Modal, Form, Input } from 'antd';
+import { getPhoneRules, getEmailRules } from '../../../utils/validators';
 
 export const SupplierFormModal = ({
   open,
@@ -57,7 +58,7 @@ export const SupplierFormModal = ({
         <Form.Item
           name="phoneNumber"
           label="Số điện thoại liên hệ"
-          rules={[{ required: true, message: 'Vui lòng nhập số điện thoại' }]}
+          rules={getPhoneRules(true, 'Vui lòng nhập số điện thoại')}
         >
           <Input placeholder="Ví dụ: 0901234567" />
         </Form.Item>
@@ -65,7 +66,7 @@ export const SupplierFormModal = ({
         <Form.Item
           name="email"
           label="Email đối tác"
-          rules={[{ type: 'email', message: 'Email không đúng định dạng' }]}
+          rules={getEmailRules(false)}
         >
           <Input placeholder="contact@supplier.vn" />
         </Form.Item>

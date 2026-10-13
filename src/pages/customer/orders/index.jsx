@@ -1,30 +1,43 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Table, Tag, Button, message } from 'antd';
-import { EyeOutlined, ReloadOutlined } from '@ant-design/icons';
+import { Card, Table, Tag, Button, message, Empty, Space, Popconfirm } from 'antd';
+import { EyeOutlined, ReloadOutlined, QrcodeOutlined, DollarOutlined } from '@ant-design/icons';
 import MainLayout from '../../../layouts/MainLayout';
+import VietQRModal from '../../../components/VietQRModal';
 import { useOrderStore } from '../../../stores/useOrderStore';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
 import { formatPaymentMethod } from '../../../utils/formatPayment';
 import { ORDER_STATUS_LABELS } from '../../../constants/enums';
-import OrderDetailModal from '../checkout/../orders/CustomerOrderDetailModal';
+import OrderDetailModal from './CustomerOrderDetailModal';
 import styles from './Orders.module.scss';
 
 const getStatusColor = (status) => {
-  switch (status) {
-    case 'DA_GIAO': return 'success';
-    case 'DANG_GIAO': return 'processing';
-    case 'DA_XAC_NHAN': return 'blue';
-    case 'CHO_XU_LY': return 'warning';
-    case 'DA_HUY': return 'error';
-    default: return 'default';
+  if (!status) return 'default';
+  const s = String(status).toUpperCase();
+  switch (s) {
+    case 'DATHANHTOAN':
+    case 'COMPLETED':
+    case 'DA_GIAO':
+      return 'success';
+    case 'CHUATHANHTOAN':
+    case 'CHO_XU_LY':
+    case 'PENDING':
+    case 'DANGXULY':
+      return 'warning';
+    case 'DAHUY':
+    case 'CANCELLED':
+    case 'DA_HUY':
+      return 'error';
+    default:
+      return 'default';
   }
 };
 
 export const CustomerOrdersPage = () => {
-  const { orders, isLoading, fetchOrders, fetchOrderById, refresh } = useOrderStore();
+  const { orders, isLoading, fetchOrders, fetchOrderById, createPayment, changePaymentMethod, refresh } = useOrderStore();
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [detailOpen, setDetailOpen] = useState(false);
+  const [vietQrPaymentData, setVietQrPaymentData] = useState(null);
 
   useEffect(() => {
     fetchOrders();
@@ -32,7 +45,7 @@ export const CustomerOrdersPage = () => {
 
   const handleViewDetail = async (record) => {
     const id = record.orderId || record.maDonHang || record.id;
-    const hide = message.loading('Đang tải chi tiết đơn hàng...', 0);
+    const hide = message.loading('Đang tải chi tiết...', 0);
     try {
       const detail = await fetchOrderById(id);
       hide();
@@ -45,53 +58,125 @@ export const CustomerOrdersPage = () => {
     }
   };
 
+  const handlePayAgain = async (record) => {
+    const id = record.orderId || record.maDonHang || record.id;
+    const hide = message.loading('Đang khởi tạo mã VietQR...', 0);
+    try {
+      const res = await createPayment(id);
+      hide();
+      if (res.success) {
+        setVietQrPaymentData(res.data?.data || res.data);
+      } else {
+        message.error(res.error || 'Không thể tạo liên kết thanh toán');
+      }
+    } catch {
+      hide();
+      message.error('Lỗi kết nối khi khởi tạo thanh toán');
+    }
+  };
+
+  const handleChangePayment = async (record, newMethod) => {
+    const id = record.orderId || record.maDonHang || record.id;
+    const hide = message.loading('Đang cập nhật phương thức...', 0);
+    try {
+      const res = await changePaymentMethod(id, newMethod);
+      hide();
+      if (res.success) {
+        message.success(`Đã đổi phương thức sang ${newMethod === 'COD' ? 'Tiền mặt (COD)' : 'Chuyển khoản VietQR'}`);
+        await refresh();
+        if (selectedOrder) {
+          const updated = await fetchOrderById(id);
+          setSelectedOrder(updated || null);
+        }
+        if (newMethod === 'VIETQR') {
+          handlePayAgain(record);
+        }
+      } else {
+        message.error(res.error || 'Không thể đổi phương thức thanh toán');
+      }
+    } catch {
+      hide();
+      message.error('Lỗi khi đổi phương thức thanh toán');
+    }
+  };
+
   const columns = [
     {
       title: 'Mã đơn hàng',
-      dataIndex: 'orderId',
       key: 'orderId',
-      render: (id, r) => <strong>{id || r.id}</strong>
+      render: (_, r) => <strong>{r.orderId || r.maDonHang || r.id}</strong>
     },
     {
       title: 'Ngày đặt',
-      dataIndex: 'createdAt',
       key: 'createdAt',
-      render: (d) => formatDate(d)
+      render: (_, r) => formatDate(r.createdAt || r.ngayLap)
     },
     {
       title: 'Thanh toán',
       key: 'payment',
-      render: (_, r) => formatPaymentMethod(r.paymentMethod || r.hinhThucThanhToan)
+      render: (_, r) => formatPaymentMethod(r.paymentMethod || r.hinhThucThanhToan || r.phuongThucTT)
     },
     {
       title: 'Tổng tiền',
-      dataIndex: 'totalAmount',
       key: 'totalAmount',
-      render: (amount, r) => (
+      render: (_, r) => (
         <span style={{ color: '#008848', fontWeight: 700 }}>
-          {formatVND(amount || r.tongTien)}
+          {formatVND(r.totalAmount || r.tongTienSauGiamGia || r.tongTien)}
         </span>
       )
     },
     {
       title: 'Trạng thái',
-      dataIndex: 'status',
       key: 'status',
-      render: (st) => <Tag color={getStatusColor(st)}>{ORDER_STATUS_LABELS[st] || st}</Tag>
+      render: (_, r) => {
+        const s = r.status || r.trangThai;
+        return <Tag color={getStatusColor(s)}>{ORDER_STATUS_LABELS[s] || s || 'Chưa rõ'}</Tag>;
+      }
     },
     {
-      title: 'Chi tiết',
+      title: 'Thao tác',
       key: 'action',
-      render: (_, record) => (
-        <Button
-          size="small"
-          type="primary"
-          icon={<EyeOutlined />}
-          onClick={() => handleViewDetail(record)}
-        >
-          Xem
-        </Button>
-      )
+      render: (_, r) => {
+        const st = String(r.status || r.trangThai || '').toUpperCase();
+        const isPaid = ['DATHANHTOAN', 'COMPLETED', 'DA_GIAO'].includes(st);
+        const isCancelled = ['DAHUY', 'CANCELLED', 'DA_HUY'].includes(st);
+        const isUnpaid = !isPaid && !isCancelled;
+        const method = String(r.paymentMethod || r.hinhThucThanhToan || r.phuongThucTT || 'COD').toUpperCase();
+
+        return (
+          <Space size="small">
+            <Button size="small" icon={<EyeOutlined />} onClick={() => handleViewDetail(r)}>
+              Chi tiết
+            </Button>
+
+            {isUnpaid && method === 'VIETQR' && (
+              <Button
+                size="small"
+                type="primary"
+                icon={<QrcodeOutlined />}
+                style={{ backgroundColor: '#0284c7', borderColor: '#0284c7' }}
+                onClick={() => handlePayAgain(r)}
+              >
+                Thanh toán
+              </Button>
+            )}
+
+            {isUnpaid && (
+              <Popconfirm
+                title="Đổi phương thức thanh toán?"
+                description={`Bạn muốn đổi sang ${method === 'VIETQR' ? 'Tiền mặt khi nhận hàng (COD)' : 'Chuyển khoản VietQR'}?`}
+                onConfirm={() => handleChangePayment(r, method === 'VIETQR' ? 'COD' : 'VIETQR')}
+                okText="Đổi"
+                cancelText="Hủy"
+              >
+                <Button size="small" icon={method === 'VIETQR' ? <DollarOutlined /> : <QrcodeOutlined />}>
+                  Đổi sang {method === 'VIETQR' ? 'COD' : 'VietQR'}
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        );
+      }
     }
   ];
 
@@ -100,15 +185,11 @@ export const CustomerOrdersPage = () => {
       <div className={styles.ordersContainer}>
         <Card
           title="Lịch sử Đơn Hàng Của Bạn"
-          extra={
-            <Button icon={<ReloadOutlined />} onClick={refresh}>
-              Làm mới
-            </Button>
-          }
+          extra={<Button icon={<ReloadOutlined />} onClick={refresh}>Làm mới</Button>}
         >
           <Table
-            rowKey={(r) => r.orderId || r.id}
-            dataSource={orders}
+            rowKey={(r) => r.orderId || r.maDonHang || r.id}
+            dataSource={orders || []}
             columns={columns}
             loading={isLoading}
             pagination={{ pageSize: 10 }}
@@ -121,6 +202,23 @@ export const CustomerOrdersPage = () => {
             open={detailOpen}
             order={selectedOrder}
             onCancel={() => setDetailOpen(false)}
+            onPayAgain={handlePayAgain}
+            onChangePaymentMethod={handleChangePayment}
+          />
+        )}
+
+        {vietQrPaymentData && (
+          <VietQRModal
+            paymentData={vietQrPaymentData}
+            onPaymentSuccess={() => {
+              setVietQrPaymentData(null);
+              message.success('Giao dịch hoàn tất! Cảm ơn bạn.');
+              refresh();
+            }}
+            onClose={() => {
+              setVietQrPaymentData(null);
+              refresh();
+            }}
           />
         )}
       </div>

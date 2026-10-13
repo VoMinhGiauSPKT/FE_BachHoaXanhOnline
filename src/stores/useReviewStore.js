@@ -57,7 +57,8 @@ export const useReviewStore = create((set, get) => ({
       return { success: true, data: res.data };
     } catch (err) {
       set({ isLoading: false });
-      return { success: false, error: err?.message };
+      const errMsg = err?.response?.data?.message || err?.message || 'Đánh giá thất bại';
+      return { success: false, error: errMsg };
     }
   },
 

@@ -62,6 +62,9 @@ export const useAuthStore = create(
             error: null
           });
 
+          // Tự động tải thông tin cá nhân chi tiết (SĐT, Email, v.v.)
+          get().fetchProfile();
+
           // Nếu đăng nhập quyền Nhân viên / Admin, xóa sạch giỏ hàng mua sắm khách hàng
           if (userType === 'EMPLOYEE' && typeof window !== 'undefined') {
             localStorage.removeItem('bhx-guest-cart');
@@ -127,18 +130,42 @@ export const useAuthStore = create(
         if (!get().isAuthenticated) return null;
         try {
           const res = await authService.getProfile();
-          if (res.data) {
+          const profileData = res.data?.data || res.data;
+          if (profileData) {
             set((state) => ({
-              user: { ...state.user, ...res.data },
-              userType: res.data.userType || state.userType,
-              position: res.data.position || state.position
+              user: { ...state.user, ...profileData },
+              userType: profileData.userType || state.userType,
+              position: profileData.position || state.position
             }));
-            return res.data;
+            return profileData;
           }
         } catch (err) {
           console.warn('Lỗi khi fetch profile:', err);
         }
         return null;
+      },
+
+      /**
+       * Đổi mật khẩu tài khoản
+       */
+      changePassword: async ({ currentPassword, newPassword, confirmPassword }) => {
+        set({ isLoading: true, error: null });
+        try {
+          const res = await authService.changePassword({ currentPassword, newPassword, confirmPassword });
+          set({ isLoading: false });
+          return {
+            success: true,
+            message: res.data?.message || 'Đổi mật khẩu thành công. Vui lòng đăng nhập lại.'
+          };
+        } catch (err) {
+          const errMsg = err.response?.data?.message || err.message || 'Đổi mật khẩu không thành công';
+          set({ isLoading: false, error: errMsg });
+          return {
+            success: false,
+            message: errMsg,
+            error: errMsg
+          };
+        }
       },
 
       /**

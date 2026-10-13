@@ -33,25 +33,10 @@ export const ProductDetailPage = () => {
 
   const tabItems = [
     {
-      key: 'specs',
-      label: 'Mô tả & Nguồn gốc',
-      children: (
-        <Card variant="borderless">
-          <p style={{ lineHeight: 1.8, color: '#334155' }}>
-            {currentProduct?.specs || 'Sản phẩm được nuôi trồng và thu hoạch theo tiêu chuẩn hữu cơ, kiểm nghiệm vệ sinh an toàn thực phẩm nghiêm ngặt.'}
-          </p>
-        </Card>
-      )
-    },
-    {
       key: 'reviews',
       label: `Đánh giá & Bình luận (${reviews?.length || 0})`,
       children: (
-        <ProductReviews
-          reviews={reviews}
-          productId={id}
-          onAddReview={createReview}
-        />
+        <ProductReviews reviews={reviews} />
       )
     }
   ];

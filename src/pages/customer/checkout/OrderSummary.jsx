@@ -21,7 +21,7 @@ export const OrderSummary = ({
         renderItem={(item) => {
           const name = item.productName || item.name;
           const price = item.price || 0;
-          const qty = item.quantity || 1;
+          const qty = Math.floor(Number(item.quantity || 1));
           const unit = PRODUCT_UNIT_LABELS[item.unit?.toUpperCase()] || item.unit || 'Kg';
           return (
             <List.Item style={{ padding: '8px 0' }}>

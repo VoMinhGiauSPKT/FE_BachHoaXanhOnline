@@ -41,9 +41,10 @@ export const ProductInfo = ({ product }) => {
       message.warning('Sản phẩm đã hết hàng!');
       return;
     }
+    const intQty = Math.max(1, Math.floor(Number(quantity)) || 1);
     setIsAdding(true);
-    await addToCart(product, quantity);
-    message.success(`Đã thêm ${quantity} ${displayUnit.toLowerCase()} ${name} vào giỏ hàng!`);
+    await addToCart(product, intQty);
+    message.success(`Đã thêm ${intQty} ${displayUnit.toLowerCase()} ${name} vào giỏ hàng!`);
     setTimeout(() => setIsAdding(false), 500);
   };
 
@@ -70,7 +71,7 @@ export const ProductInfo = ({ product }) => {
           {isOutOfStock ? (
             <Tag color="error">Hết hàng</Tag>
           ) : (
-            <Tag color="success">Còn hàng ({stock} {displayUnit.toLowerCase()})</Tag>
+            <Tag color="success">Còn hàng ({Math.floor(stock)} {displayUnit.toLowerCase()})</Tag>
           )}
         </div>
 
@@ -86,11 +87,13 @@ export const ProductInfo = ({ product }) => {
         <div className={styles.actionRow}>
           <span className={styles.qtyLabel}>Số lượng:</span>
           <InputNumber
-            min={unit === 'KG' ? 0.1 : 1}
-            max={stock > 0 ? stock : 1}
-            step={unit === 'KG' ? 0.1 : 1}
+            min={1}
+            max={stock > 0 ? Math.floor(stock) : 1}
+            step={1}
+            precision={0}
             value={quantity}
-            onChange={(val) => setQuantity(val || 1)}
+            parser={(val) => (val ? String(val).replace(/\D/g, '') : '')}
+            onChange={(val) => setQuantity(Math.max(1, Math.floor(Number(val)) || 1))}
             size="large"
             disabled={isOutOfStock}
           />
