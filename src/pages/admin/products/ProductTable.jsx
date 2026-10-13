@@ -18,6 +18,13 @@ export const ProductTable = ({
 }) => {
   const columns = [
     {
+      title: 'Mã',
+      dataIndex: 'productId',
+      key: 'productId',
+      width: 100,
+      render: (id, record) => <Text copyable strong>{id || record.id}</Text>
+    },
+    {
       title: 'Ảnh',
       dataIndex: 'imageUrl',
       key: 'imageUrl',
@@ -34,23 +41,19 @@ export const ProductTable = ({
       )
     },
     {
-      title: 'Mã SP',
-      dataIndex: 'productId',
-      key: 'productId',
-      width: 100,
-      render: (id, record) => <Text copyable strong>{id || record.id}</Text>
-    },
-    {
-      title: 'Tên sản phẩm',
+      title: 'Tên',
       dataIndex: 'productName',
       key: 'productName',
-      render: (name, record) => (
-        <div>
-          <div style={{ fontWeight: 600 }}>{name || record.name}</div>
-          <Text type="secondary" style={{ fontSize: 12 }}>
-            {record.category?.categoryName || record.categoryName || 'Chung'}
-          </Text>
-        </div>
+      render: (name, record) => <span style={{ fontWeight: 600 }}>{name || record.name}</span>
+    },
+    {
+      title: 'Danh mục',
+      key: 'category',
+      width: 140,
+      render: (_, record) => (
+        <Tag color="cyan">
+          {record.category?.categoryName || record.categoryName || 'Chung'}
+        </Tag>
       )
     },
     {

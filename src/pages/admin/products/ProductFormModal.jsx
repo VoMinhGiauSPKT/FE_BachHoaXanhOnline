@@ -104,10 +104,14 @@ export const ProductFormModal = ({
           <Col span={10}>
             <Form.Item
               name="categoryId"
-              label="Danh mục ngành hàng"
+              label={
+                <span>
+                  Danh mục ngành hàng {isEdit && <Tag color="default">Cố định</Tag>}
+                </span>
+              }
               rules={[{ required: true, message: 'Vui lòng chọn danh mục' }]}
             >
-              <Select placeholder="Chọn danh mục">
+              <Select placeholder="Chọn danh mục" disabled={isEdit}>
                 {categories.map((c) => (
                   <Select.Option key={c.categoryId || c.id} value={c.categoryId || c.id}>
                     {c.categoryName || c.name} ({c.profitMargin || 0}%)
@@ -125,6 +129,11 @@ export const ProductFormModal = ({
           </div>
           <div className={styles.formulaDesc}>
             Giá bán = Giá nhập × (1 + {profitMargin}%) × (1 + {vat || 0}%)
+            {isEdit && (
+              <span style={{ marginLeft: 8, color: '#64748b', fontSize: 12 }}>
+                🔒 (Giá nhập, thuế & danh mục được cố định khi chỉnh sửa)
+              </span>
+            )}
           </div>
           <div className={styles.calculationBreakdown}>
             <div className={styles.breakdownItem}>
@@ -146,7 +155,11 @@ export const ProductFormModal = ({
           <Col span={8}>
             <Form.Item
               name="importPrice"
-              label="Giá nhập vào (VND)"
+              label={
+                <span>
+                  Giá nhập vào (VND) {isEdit && <Tag color="default">Cố định</Tag>}
+                </span>
+              }
               rules={[{ required: true, message: 'Vui lòng nhập giá nhập' }]}
             >
               <InputNumber
@@ -154,6 +167,7 @@ export const ProductFormModal = ({
                 style={{ width: '100%' }}
                 min={0}
                 step={1000}
+                disabled={isEdit}
                 placeholder="Nhập giá nhập..."
                 formatter={(val) => `${val}`.replace(/\B(?=(\d{3})+(?!\d))/g, ',')}
               />
@@ -163,10 +177,15 @@ export const ProductFormModal = ({
           <Col span={8}>
             <Form.Item
               name="vat"
-              label="Thuế VAT (%)"
+              label={
+                <span>
+                  Thuế VAT (%) {isEdit && <Tag color="default">Cố định</Tag>}
+                </span>
+              }
               rules={[{ required: true, message: 'Chọn mức thuế VAT' }]}
             >
               <Select
+                disabled={isEdit}
                 options={[
                   { value: 0, label: '0% (Miễn thuế)' },
                   { value: 5, label: '5% (Ưu đãi)' },
