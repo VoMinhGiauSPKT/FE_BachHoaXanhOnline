@@ -12,7 +12,7 @@ export const ProductCard = ({ product }) => {
   const [isAdding, setIsAdding] = useState(false);
 
   const productId = product.productId || product.id;
-  const name = product.productName || product.name;
+  const name = product.productName || product.name || 'Sản phẩm';
   const price = product.price || 0;
   const unit = product.unit || 'KG';
   const displayUnit = PRODUCT_UNIT_LABELS[unit?.toUpperCase()] || unit;
@@ -51,7 +51,7 @@ export const ProductCard = ({ product }) => {
             ) : isLowStock ? (
               <Tag color="warning">Chỉ còn {stock} {displayUnit.toLowerCase()}</Tag>
             ) : (
-              <Tag color="success">Tươi sạch</Tag>
+              <Tag color="success">Mới</Tag>
             )}
           </div>
           {imageUrl && imageUrl.startsWith('http') ? (
@@ -64,36 +64,40 @@ export const ProductCard = ({ product }) => {
         </Link>
       }
     >
-      <div className={styles.metaRow}>
-        <span className={styles.categoryTag}>{categoryName}</span>
-        {reviewsCount > 0 && (
-          <div className={styles.ratingWrap}>
-            <Rate disabled defaultValue={rating} style={{ fontSize: 11 }} />
-            <span className={styles.reviewCount}>({reviewsCount})</span>
-          </div>
-        )}
-      </div>
+      {/* 1. Loại sản phẩm */}
+      <span className={styles.categoryName} title={categoryName}>
+        {categoryName}
+      </span>
 
-      <h3 className={styles.title} title={name}>
+      {/* 2. Tên sản phẩm */}
+      <h3 className={styles.productTitle} title={name}>
         <Link to={`/product/${productId}`}>{name}</Link>
       </h3>
 
-      <div className={styles.cardFooter}>
-        <div className={styles.priceWrap}>
-          <span className={styles.amount}>{formatVND(price)}</span>
-          <span className={styles.unitText}>/ {displayUnit}</span>
-        </div>
-
-        <Button
-          type="primary"
-          shape="circle"
-          icon={isAdding ? <CheckOutlined /> : <PlusOutlined />}
-          disabled={isOutOfStock}
-          loading={isAdding}
-          onClick={handleAddClick}
-          style={{ backgroundColor: isOutOfStock ? undefined : '#008848' }}
-        />
+      {/* 3. Số sao (lượt đánh giá) */}
+      <div className={styles.ratingRow}>
+        <Rate disabled value={rating} style={{ fontSize: 12 }} />
+        <span className={styles.reviewCount}>({reviewsCount})</span>
       </div>
+
+      {/* 4. Giá / đơn vị */}
+      <div className={styles.priceRow} title={`${formatVND(price)} / ${displayUnit}`}>
+        <span className={styles.amount}>{formatVND(price)}</span>
+        <span className={styles.unitText}>/ {displayUnit}</span>
+      </div>
+
+      {/* 5. Nút thêm vào giỏ hàng */}
+      <Button
+        type="primary"
+        block
+        icon={isAdding ? <CheckOutlined /> : <PlusOutlined />}
+        disabled={isOutOfStock}
+        loading={isAdding}
+        onClick={handleAddClick}
+        className={styles.addCartBtn}
+      >
+        {isOutOfStock ? 'Hết hàng' : (isAdding ? 'Đã thêm vào giỏ' : 'Thêm vào giỏ')}
+      </Button>
     </Card>
   );
 };
