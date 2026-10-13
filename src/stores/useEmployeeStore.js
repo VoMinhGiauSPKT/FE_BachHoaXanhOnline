@@ -10,7 +10,8 @@ export const useEmployeeStore = create((set, get) => ({
   isLoading: false,
   error: null,
   filters: {
-    keyword: '',
+    nameKeyword: '',
+    phoneKeyword: '',
     position: '',
     status: ''
   },
@@ -31,10 +32,11 @@ export const useEmployeeStore = create((set, get) => ({
   fetchEmployees: async (customParams = {}) => {
     set({ isLoading: true, error: null });
     const { page, limit, filters } = get();
+    const activeKeyword = filters.nameKeyword || filters.phoneKeyword || '';
     const params = {
       page,
       limit,
-      keyword: filters.keyword || undefined,
+      keyword: activeKeyword ? activeKeyword.trim() : undefined,
       position: filters.position || undefined,
       status: filters.status !== '' ? filters.status : undefined,
       ...customParams
@@ -58,6 +60,17 @@ export const useEmployeeStore = create((set, get) => ({
       } else if (data?.data && Array.isArray(data.data)) {
         employeeList = data.data;
         totalCount = data.total ?? data.data.length;
+      }
+
+      if (filters.nameKeyword && filters.phoneKeyword) {
+        const nameLower = filters.nameKeyword.trim().toLowerCase();
+        const phoneTrim = filters.phoneKeyword.trim();
+        employeeList = employeeList.filter(
+          (e) =>
+            (e.fullName?.toLowerCase().includes(nameLower) ||
+              e.username?.toLowerCase().includes(nameLower)) &&
+            e.phoneNumber?.includes(phoneTrim)
+        );
       }
 
       set({

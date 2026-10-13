@@ -16,11 +16,12 @@ export const EmployeeFormModal = ({
     if (open) {
       if (editingEmployee) {
         form.setFieldsValue({
-          fullName: editingEmployee.fullName || editingEmployee.hoTen,
-          username: editingEmployee.username,
+          fullName: editingEmployee.fullName || editingEmployee.hoTen || editingEmployee.tenND,
+          username: editingEmployee.username || editingEmployee.tenDangNhap,
           phoneNumber: editingEmployee.phoneNumber || editingEmployee.soDienThoai,
           email: editingEmployee.email || '',
-          position: editingEmployee.position || editingEmployee.chucVu || 'STAFF'
+          position: editingEmployee.position || editingEmployee.chucVu || 'STAFF',
+          newPassword: ''
         });
       } else {
         form.resetFields();
@@ -31,15 +32,29 @@ export const EmployeeFormModal = ({
   const handleOk = async () => {
     try {
       const values = await form.validateFields();
-      await onSubmit(values);
-    } catch (err) {
-      // Form fail
+      const payload = {
+        fullName: values.fullName?.trim(),
+        phoneNumber: values.phoneNumber?.trim(),
+        email: values.email?.trim() || undefined,
+        position: values.position
+      };
+      if (isEdit) {
+        if (values.newPassword && values.newPassword.trim()) {
+          payload.newPassword = values.newPassword.trim();
+        }
+      } else {
+        payload.username = values.username?.trim();
+        payload.password = values.password;
+      }
+      await onSubmit(payload);
+    } catch {
+      // Form validation failed
     }
   };
 
   return (
     <Modal
-      title={isEdit ? 'Cập nhật nhân viên' : 'Tạo tài khoản nhân viên mới'}
+      title={isEdit ? 'Cập nhật nhân viên & Cấp lại mật khẩu' : 'Tạo tài khoản nhân viên mới'}
       open={open}
       onOk={handleOk}
       onCancel={onCancel}
@@ -65,11 +80,23 @@ export const EmployeeFormModal = ({
           <Input placeholder="nguyenvana" disabled={isEdit} />
         </Form.Item>
 
-        {!isEdit && (
+        {isEdit ? (
+          <Form.Item
+            name="newPassword"
+            label="Cấp lại mật khẩu mới"
+            rules={[{ min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên' }]}
+            extra="Để trống nếu không muốn đổi mật khẩu nhân viên"
+          >
+            <Input.Password placeholder="Nhập mật khẩu mới nếu muốn cấp lại (tối thiểu 6 ký tự)" />
+          </Form.Item>
+        ) : (
           <Form.Item
             name="password"
             label="Mật khẩu khởi tạo"
-            rules={[{ required: true, message: 'Vui lòng nhập mật khẩu' }]}
+            rules={[
+              { required: true, message: 'Vui lòng nhập mật khẩu' },
+              { min: 6, message: 'Mật khẩu phải từ 6 ký tự trở lên' }
+            ]}
           >
             <Input.Password placeholder="Tối thiểu 6 ký tự" />
           </Form.Item>
@@ -78,7 +105,10 @@ export const EmployeeFormModal = ({
         <Form.Item
           name="phoneNumber"
           label="Số điện thoại"
-          rules={[{ required: true, message: 'Vui lòng nhập SĐT' }]}
+          rules={[
+            { required: true, message: 'Vui lòng nhập SĐT' },
+            { pattern: /^(0|\+84)[0-9]{9}$/, message: 'Số điện thoại không đúng định dạng' }
+          ]}
         >
           <Input placeholder="0901234567" />
         </Form.Item>

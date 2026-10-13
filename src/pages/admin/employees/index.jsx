@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Space, message, Input } from 'antd';
-import { PlusOutlined, ReloadOutlined, SearchOutlined } from '@ant-design/icons';
+import { Card, Button, message } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
 import { useEmployeeStore } from '../../../stores/useEmployeeStore';
+import EmployeeFilterBar from './EmployeeFilterBar';
 import EmployeeTable from './EmployeeTable';
 import EmployeeFormModal from './EmployeeFormModal';
 
@@ -31,7 +32,7 @@ export const AdminEmployeesPage = () => {
   }, [fetchEmployees]);
 
   const handleEdit = async (emp) => {
-    const id = emp.employeeId || emp.id;
+    const id = emp.employeeId || emp.maNhanVien || emp.id;
     const hide = message.loading('Đang tải dữ liệu chi tiết...', 0);
     try {
       const detail = await fetchEmployeeById(id);
@@ -52,7 +53,7 @@ export const AdminEmployeesPage = () => {
 
   const handleModalSubmit = async (values) => {
     if (editingEmployee) {
-      const id = editingEmployee.employeeId || editingEmployee.id;
+      const id = editingEmployee.employeeId || editingEmployee.maNhanVien || editingEmployee.id;
       const res = await updateEmployee(id, values);
       if (res.success) {
         message.success('Cập nhật nhân viên thành công!');
@@ -85,24 +86,24 @@ export const AdminEmployeesPage = () => {
       title="Quản lý Tài khoản & Phân quyền Nhân Viên"
       variant="borderless"
       extra={
-        <Space wrap>
-          <Input
-            placeholder="Tìm theo tên hoặc username..."
-            prefix={<SearchOutlined />}
-            value={filters.keyword}
-            onChange={(e) => setFilters({ keyword: e.target.value })}
-            style={{ width: 240 }}
-            allowClear
-          />
-          <Button icon={<ReloadOutlined />} onClick={refresh}>
-            Làm mới
-          </Button>
-          <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
-            Thêm nhân viên
-          </Button>
-        </Space>
+        <Button type="primary" icon={<PlusOutlined />} onClick={handleAddNew}>
+          Thêm nhân viên
+        </Button>
       }
     >
+      <EmployeeFilterBar
+        nameKeyword={filters.nameKeyword}
+        phoneKeyword={filters.phoneKeyword}
+        position={filters.position}
+        status={filters.status}
+        onNameChange={(val) => setFilters({ nameKeyword: val })}
+        onPhoneChange={(val) => setFilters({ phoneKeyword: val })}
+        onPositionChange={(pos) => setFilters({ position: pos })}
+        onStatusChange={(st) => setFilters({ status: st ?? '' })}
+        onReset={() => setFilters({ nameKeyword: '', phoneKeyword: '', position: '', status: '' })}
+        onRefresh={refresh}
+      />
+
       <EmployeeTable
         employees={employees}
         isLoading={isLoading}
