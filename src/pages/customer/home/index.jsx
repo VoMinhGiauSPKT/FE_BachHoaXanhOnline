@@ -38,12 +38,12 @@ export const HomePage = () => {
             <HomeSidebarFilter
               categories={categories}
               selectedCategoryId={filters.categoryId}
-              inStockOnly={filters.inStock}
+              inStockOnly={Boolean(filters.inStock === true || filters.inStock === 'in_stock')}
               sortBy={filters.sortBy}
               onCategoryChange={(catId) => setFilters({ categoryId: catId })}
-              onInStockChange={(checked) => setFilters({ inStock: checked })}
+              onInStockChange={(checked) => setFilters({ inStock: checked ? true : null })}
               onSortChange={(sort) => setFilters({ sortBy: sort })}
-              onReset={() => setFilters({ keyword: '', categoryId: null, inStock: false, sortBy: 'default' })}
+              onReset={() => setFilters({ keyword: '', categoryId: null, inStock: null, sortBy: 'default' })}
             />
           </Col>
 

@@ -13,7 +13,7 @@ export const useProductStore = create((set, get) => ({
     keyword: '',
     categoryId: null,
     sortBy: 'default',
-    inStock: false
+    inStock: null
   },
 
   setFilters: (newFilters) => {
@@ -32,13 +32,21 @@ export const useProductStore = create((set, get) => ({
   fetchProducts: async (customParams = {}) => {
     set({ isLoading: true, error: null });
     const { page, limit, filters } = get();
+
+    let inStockParam = undefined;
+    if (filters.inStock === true || filters.inStock === 'in_stock') {
+      inStockParam = true;
+    } else if (filters.inStock === false || filters.inStock === 'out_of_stock') {
+      inStockParam = false;
+    }
+
     const params = {
       page,
       limit,
       keyword: filters.keyword || undefined,
       categoryId: filters.categoryId || undefined,
       sortBy: ['price_asc', 'price_desc', 'newest'].includes(filters.sortBy) ? filters.sortBy : undefined,
-      inStock: filters.inStock ? true : undefined,
+      inStock: inStockParam,
       ...customParams
     };
 

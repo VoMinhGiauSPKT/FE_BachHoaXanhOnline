@@ -81,12 +81,18 @@ export const AdminProductsPage = () => {
       <ProductFilterBar
         search={filters.keyword}
         categoryFilter={filters.categoryId}
-        inStockFilter={filters.inStock ? 'in_stock' : ''}
+        inStockFilter={
+          filters.inStock === true || filters.inStock === 'in_stock'
+            ? 'in_stock'
+            : filters.inStock === false || filters.inStock === 'out_of_stock'
+            ? 'out_of_stock'
+            : undefined
+        }
         categories={categories}
         onSearchChange={(kw) => setFilters({ keyword: kw })}
         onCategoryChange={(catId) => setFilters({ categoryId: catId })}
-        onInStockChange={(val) => setFilters({ inStock: val === 'in_stock' })}
-        onReset={() => setFilters({ keyword: '', categoryId: null, inStock: false })}
+        onInStockChange={(val) => setFilters({ inStock: val || null })}
+        onReset={() => setFilters({ keyword: '', categoryId: null, inStock: null })}
         onRefresh={refresh}
         onAddNew={handleAddNew}
       />
