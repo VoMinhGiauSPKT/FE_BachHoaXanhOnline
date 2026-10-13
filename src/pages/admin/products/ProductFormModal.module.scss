@@ -1,0 +1,49 @@
+.calculationCard {
+  background-color: #f6ffed;
+  border: 1px solid #b7eb8f;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+}
+
+.calculationHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #237804;
+}
+
+.formulaDesc {
+  font-size: 12px;
+  color: #595959;
+  margin-bottom: 10px;
+}
+
+.calculationBreakdown {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #d9d9d9;
+}
+
+.breakdownItem {
+  font-size: 13px;
+  color: #262626;
+
+  span {
+    font-weight: 600;
+    color: #008848;
+  }
+}
+
+.sellingPriceHighlight {
+  font-size: 15px;
+  font-weight: 700;
+  color: #008848;
+}
