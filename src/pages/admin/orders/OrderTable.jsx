@@ -1,5 +1,5 @@
 import React from 'react';
-import { Table, Tag, Space, Button, Popconfirm, Typography } from 'antd';
+import { Table, Tag, Space, Button, Popconfirm, Typography, Tooltip } from 'antd';
 import { EyeOutlined, CheckCircleOutlined, CloseCircleOutlined } from '@ant-design/icons';
 import { formatVND } from '../../../utils/formatCurrency';
 import { formatDate } from '../../../utils/formatDate';
@@ -62,28 +62,27 @@ export const OrderTable = ({
       title: 'Mã',
       dataIndex: 'orderId',
       key: 'orderId',
-      width: 110,
+      width: 100,
       render: (id, record) => <Text copyable strong>{id || record.maDonHang || record.id}</Text>
     },
     {
       title: 'Người nhận',
       dataIndex: 'receiverName',
       key: 'receiverName',
-      width: 140,
       render: (name, record) => <strong>{name || record.tenNguoiNhan || '—'}</strong>
     },
     {
       title: 'SĐT',
       dataIndex: 'phoneNumber',
       key: 'phoneNumber',
-      width: 110,
+      width: 130,
       render: (phone, record) => phone || record.soDienThoaiNhan || '—'
     },
     {
       title: 'Ngày đặt',
       dataIndex: 'createdAt',
       key: 'createdAt',
-      width: 140,
+      width: 120,
       render: (date, record) => formatDate(date || record.ngayLap)
     },
     {
@@ -96,7 +95,7 @@ export const OrderTable = ({
       title: 'Tổng tiền',
       dataIndex: 'totalAmount',
       key: 'totalAmount',
-      width: 130,
+      width: 120,
       render: (amount, record) => (
         <span style={{ color: '#008848', fontWeight: 700 }}>
           {formatVND(amount || record.tongTienSauGiamGia || record.tongTien)}
@@ -106,7 +105,7 @@ export const OrderTable = ({
     {
       title: 'Trạng thái',
       key: 'status',
-      width: 150,
+      width: 140,
       render: (_, record) => {
         const st = record.status || record.trangThai;
         return (
@@ -119,7 +118,8 @@ export const OrderTable = ({
     {
       title: 'Thao tác',
       key: 'actions',
-      width: 220,
+      width: 120,
+      align: 'center',
       render: (_, record) => {
         const id = record.orderId || record.maDonHang || record.id;
         const st = record.status || record.trangThai;
@@ -127,12 +127,14 @@ export const OrderTable = ({
 
         return (
           <Space size="small">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EyeOutlined />}
-              onClick={() => onViewDetail(record)}
-            />
+            <Tooltip title="Xem chi tiết đơn hàng">
+              <Button
+                type="primary"
+                size="small"
+                icon={<EyeOutlined />}
+                onClick={() => onViewDetail(record)}
+              />
+            </Tooltip>
             {unpaid && (
               <>
                 <Popconfirm
@@ -141,14 +143,14 @@ export const OrderTable = ({
                   cancelText="Hủy"
                   onConfirm={() => onConfirmCod(id)}
                 >
-                  <Button
-                    size="small"
-                    type="primary"
-                    style={{ background: '#008848', borderColor: '#008848' }}
-                    icon={<CheckCircleOutlined />}
-                  >
-                    Xác nhận
-                  </Button>
+                  <Tooltip title="Xác nhận thanh toán">
+                    <Button
+                      size="small"
+                      type="primary"
+                      style={{ background: '#008848', borderColor: '#008848' }}
+                      icon={<CheckCircleOutlined />}
+                    />
+                  </Tooltip>
                 </Popconfirm>
                 <Popconfirm
                   title="Xác nhận hủy đơn hàng này?"
@@ -157,9 +159,9 @@ export const OrderTable = ({
                   okButtonProps={{ danger: true }}
                   onConfirm={() => onCancelOrder(id)}
                 >
-                  <Button size="small" danger icon={<CloseCircleOutlined />}>
-                    Hủy đơn
-                  </Button>
+                  <Tooltip title="Hủy đơn hàng">
+                    <Button size="small" danger icon={<CloseCircleOutlined />} />
+                  </Tooltip>
                 </Popconfirm>
               </>
             )}
