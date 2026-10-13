@@ -75,8 +75,8 @@ export const ProductTable = ({
       render: (stock, record) => {
         const qty = Number(stock !== undefined ? stock : (record.quantity || 0));
         if (qty <= 0) return <Tag color="error">Hết hàng</Tag>;
-        if (qty < 10) return <Tag color="warning">Sắp hết ({qty})</Tag>;
-        return <Tag color="success">Còn ({qty})</Tag>;
+        if (qty < 10) return <Tag color="warning">{qty}</Tag>;
+        return <Tag color="success">{qty}</Tag>;
       }
     },
     {
